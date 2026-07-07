@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Sector extends Model
 {
-    protected $guarded = [];
+    protected $fillable = ['name'];
 
     public function profiles(): BelongsToMany
     {
