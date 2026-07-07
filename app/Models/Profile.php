@@ -79,6 +79,11 @@ class Profile extends Model
         return $this->hasMany(Certification::class)->orderByDesc('issue_date');
     }
 
+    public function projects(): HasMany
+    {
+        return $this->hasMany(Project::class)->orderByDesc('start_date');
+    }
+
     protected function casts(): array
     {
         return [
