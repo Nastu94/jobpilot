@@ -31,6 +31,7 @@ class CreateJobApplicationDraftTest extends TestCase
         $this->assertSame($sourceVersion->id, $application->resume_version_id);
         $this->assertSame($version->id, $application->generated_document_version_id);
         $this->assertTrue($application->generatedDocumentVersion->is($version));
+        $this->assertTrue($version->fresh()->jobApplications->contains($application));
         $this->assertSame('Backend Developer', $application->job_title);
         $this->assertSame('Acme', $application->company_name);
         $this->assertSame('draft', $application->status);
@@ -88,6 +89,22 @@ class CreateJobApplicationDraftTest extends TestCase
             );
             $this->assertDatabaseCount('job_applications', 1);
         }
+    }
+
+    public function test_deleting_selected_version_preserves_application_snapshot(): void
+    {
+        [$owner, , , , $document, $version] = $this->scenario();
+        $application = app(CreateJobApplicationDraft::class)->execute($version, $owner);
+
+        $version->delete();
+        $application->refresh();
+
+        $this->assertNull($application->generated_document_version_id);
+        $this->assertSame('Backend Developer', $application->job_title);
+        $this->assertSame('Acme', $application->company_name);
+        $this->assertSame('draft', $application->status);
+        $this->assertSame($application->id, $document->fresh()->job_application_id);
+        $this->assertDatabaseHas('job_applications', ['id' => $application->id]);
     }
 
     public function test_company_relation_is_used_when_posting_snapshot_is_empty(): void
