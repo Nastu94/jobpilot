@@ -75,6 +75,14 @@ class JobPosting extends Model
             ->orderBy('id');
     }
 
+    public function approvedRequirements(): HasMany
+    {
+        return $this->hasMany(JobPostingRequirement::class)
+            ->approved()
+            ->orderBy('position')
+            ->orderBy('id');
+    }
+
     protected function casts(): array
     {
         return [
