@@ -85,10 +85,10 @@ class TransitionJobApplicationStatus
                 ]);
             }
 
-            $nextActionAt = array_key_exists('next_action_at', $transition)
-                && $transition['next_action_at'] !== null
-                    ? CarbonImmutable::parse($transition['next_action_at'])
-                    : null;
+            $hasNextActionInput = array_key_exists('next_action_at', $transition);
+            $nextActionAt = $hasNextActionInput && $transition['next_action_at'] !== null
+                ? CarbonImmutable::parse($transition['next_action_at'])
+                : null;
 
             if (
                 $nextActionAt !== null
@@ -120,9 +120,11 @@ class TransitionJobApplicationStatus
                 );
             }
 
-            $updates['next_action_at'] = in_array($targetStatus, self::TERMINAL_STATUSES, true)
-                ? null
-                : $nextActionAt;
+            if (in_array($targetStatus, self::TERMINAL_STATUSES, true)) {
+                $updates['next_action_at'] = null;
+            } elseif ($hasNextActionInput) {
+                $updates['next_action_at'] = $nextActionAt;
+            }
 
             $application->forceFill($updates)->save();
             $application->statusHistory()->create([
