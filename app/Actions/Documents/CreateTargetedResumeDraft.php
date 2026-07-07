@@ -95,11 +95,13 @@ class CreateTargetedResumeDraft
                 ]);
             }
 
-            $existingVersion = $document->versions()
+            $existingVersion = GeneratedDocumentVersion::query()
+                ->where('generated_document_id', $document->getKey())
                 ->where('source_resume_version_id', $sourceResumeVersion->getKey())
                 ->where('match_analysis_id', $analysis->getKey())
                 ->where('generator_key', DeterministicTargetedResumeDraftBuilder::KEY)
                 ->where('generator_version', DeterministicTargetedResumeDraftBuilder::VERSION)
+                ->where('input_hash', $draft['input_hash'])
                 ->first();
 
             if ($existingVersion !== null) {
@@ -110,7 +112,9 @@ class CreateTargetedResumeDraft
                 ]);
             }
 
-            $nextVersionNumber = ((int) $document->versions()->max('version_number')) + 1;
+            $nextVersionNumber = ((int) GeneratedDocumentVersion::query()
+                ->where('generated_document_id', $document->getKey())
+                ->max('version_number')) + 1;
             $document->forceFill(['status' => 'draft'])->save();
 
             $version = $document->versions()->create([
