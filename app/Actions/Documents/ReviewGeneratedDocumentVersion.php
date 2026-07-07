@@ -44,7 +44,7 @@ class ReviewGeneratedDocumentVersion
                 'review_status' => $review['decision'],
                 'reviewed_by' => $reviewer->getKey(),
                 'reviewed_at' => now(),
-                'review_notes' => $this->nullableSquished($review['review_notes']),
+                'review_notes' => $this->nullableSquished($review['review_notes'] ?? null),
             ])->save();
 
             $this->updateDocumentStatus($version);
