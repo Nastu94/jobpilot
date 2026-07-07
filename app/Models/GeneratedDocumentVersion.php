@@ -1,0 +1,40 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+
+class GeneratedDocumentVersion extends Model
+{
+    protected $guarded = [
+        'id',
+        'created_at',
+        'updated_at',
+    ];
+
+    public function generatedDocument(): BelongsTo
+    {
+        return $this->belongsTo(GeneratedDocument::class);
+    }
+
+    public function sourceResumeVersion(): BelongsTo
+    {
+        return $this->belongsTo(ResumeVersion::class, 'source_resume_version_id');
+    }
+
+    public function matchAnalysis(): BelongsTo
+    {
+        return $this->belongsTo(MatchAnalysis::class);
+    }
+
+    protected function casts(): array
+    {
+        return [
+            'version_number' => 'integer',
+            'file_size' => 'integer',
+            'contains_unverified_claims' => 'boolean',
+            'reviewed_at' => 'datetime',
+        ];
+    }
+}
