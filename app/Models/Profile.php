@@ -104,6 +104,13 @@ class Profile extends Model
             ->orderByDesc('id');
     }
 
+    public function jobApplications(): HasMany
+    {
+        return $this->hasMany(JobApplication::class)
+            ->orderByDesc('applied_at')
+            ->orderByDesc('id');
+    }
+
     protected function casts(): array
     {
         return [
