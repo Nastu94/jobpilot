@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Profile extends Model
 {
@@ -24,6 +25,11 @@ class Profile extends Model
     public function sectors(): BelongsToMany
     {
         return $this->belongsToMany(Sector::class)->withTimestamps();
+    }
+
+    public function workExperiences(): HasMany
+    {
+        return $this->hasMany(WorkExperience::class)->orderByDesc('start_date');
     }
 
     protected function casts(): array
