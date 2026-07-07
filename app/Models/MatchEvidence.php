@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class MatchEvidence extends Model
 {
+    protected $table = 'match_evidences';
+
     protected $guarded = [
         'id',
         'created_at',
