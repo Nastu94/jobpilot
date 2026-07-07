@@ -7,7 +7,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Certification extends Model
 {
-    protected $guarded = [];
+    protected $guarded = [
+        'id',
+        'created_at',
+        'updated_at',
+    ];
 
     public function profile(): BelongsTo
     {
