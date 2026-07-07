@@ -21,4 +21,9 @@ class Software extends Model
             ->withPivot(['proficiency_level', 'years_experience', 'source', 'is_approved', 'notes'])
             ->withTimestamps();
     }
+
+    public function jobPostingRequirements(): HasMany
+    {
+        return $this->hasMany(JobPostingRequirement::class)->orderBy('position');
+    }
 }
