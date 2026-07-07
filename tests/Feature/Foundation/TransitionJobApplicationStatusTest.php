@@ -14,6 +14,7 @@ use App\Models\ResumeVersion;
 use App\Models\User;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Tests\TestCase;
 
@@ -249,7 +250,7 @@ class TransitionJobApplicationStatusTest extends TestCase
 
             $this->fail('An unsafe selected version was used for an application.');
         } catch (ValidationException $exception) {
-            $this->assertArrayHasKey('generated_document_version', $exception->errors());
+            $this->assertArrayHasKey('submission_readiness', $exception->errors());
             $this->assertSame('draft', $application->fresh()->status);
             $this->assertNull($application->fresh()->applied_at);
         }
@@ -257,6 +258,8 @@ class TransitionJobApplicationStatusTest extends TestCase
 
     private function scenario(): array
     {
+        Storage::fake('local');
+
         $owner = User::factory()->create();
         $profile = Profile::create(['user_id' => $owner->id]);
         $posting = JobPosting::create([
@@ -281,18 +284,38 @@ class TransitionJobApplicationStatusTest extends TestCase
             'name' => 'Targeted CV',
             'status' => 'ready',
         ]);
+        $content = '# Approved targeted resume';
+        $checksum = hash('sha256', $content);
         $version = GeneratedDocumentVersion::create([
             'generated_document_id' => $document->id,
             'source_resume_version_id' => $sourceVersion->id,
             'version_number' => 1,
-            'generation_method' => 'template',
+            'generation_method' => 'manual',
+            'generator_key' => 'manual_targeted_resume_finalization',
+            'generator_version' => '1.0.0',
             'content_format' => 'markdown',
-            'content' => '# Approved targeted resume',
+            'content' => $content,
             'review_status' => 'approved',
             'contains_unverified_claims' => false,
             'reviewed_by' => $owner->id,
             'reviewed_at' => now()->subHours(2),
+            'reviewed_content_sha256' => $checksum,
         ]);
+        $path = sprintf(
+            'generated-documents/profile-%d/document-%d/version-%d/targeted-cv-v1.md',
+            $profile->id,
+            $document->id,
+            $version->id,
+        );
+        Storage::disk('local')->put($path, $content);
+        $version->forceFill([
+            'storage_disk' => 'local',
+            'storage_path' => $path,
+            'filename' => 'targeted-cv-v1.md',
+            'mime_type' => 'text/markdown',
+            'file_size' => strlen($content),
+            'checksum_sha256' => $checksum,
+        ])->save();
         $application = JobApplication::create([
             'profile_id' => $profile->id,
             'job_posting_id' => $posting->id,
@@ -302,6 +325,7 @@ class TransitionJobApplicationStatusTest extends TestCase
             'company_name' => 'Acme',
             'status' => 'draft',
         ]);
+        $document->forceFill(['job_application_id' => $application->id])->save();
         $initialHistory = JobApplicationStatusHistory::create([
             'job_application_id' => $application->id,
             'from_status' => null,
