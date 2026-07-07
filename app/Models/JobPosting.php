@@ -68,6 +68,13 @@ class JobPosting extends Model
             ->orderByDesc('id');
     }
 
+    public function requirements(): HasMany
+    {
+        return $this->hasMany(JobPostingRequirement::class)
+            ->orderBy('position')
+            ->orderBy('id');
+    }
+
     protected function casts(): array
     {
         return [
