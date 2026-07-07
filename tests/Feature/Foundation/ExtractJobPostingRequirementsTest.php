@@ -70,6 +70,14 @@ class ExtractJobPostingRequirementsTest extends TestCase
         $this->assertNull($requirements[0]->skill_id);
         $this->assertNull($requirements[1]->language_id);
 
+        $this->assertSame('skill', $requirements[0]->proposed_requirement_type);
+        $this->assertSame('required', $requirements[0]->proposed_importance);
+        $this->assertSame('PHP', $requirements[0]->proposed_label);
+        $this->assertSame('php', $requirements[0]->proposed_normalized_label);
+        $this->assertSame('3.0', $requirements[0]->proposed_min_years);
+        $this->assertSame('language', $requirements[1]->proposed_requirement_type);
+        $this->assertSame('B2', $requirements[1]->proposed_proficiency_level);
+
         $operation = AiOperation::query()->sole();
 
         $this->assertSame('completed', $operation->status);
