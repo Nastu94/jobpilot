@@ -36,6 +36,11 @@ class JobApplication extends Model
             ->orderBy('id');
     }
 
+    public function generatedDocuments(): HasMany
+    {
+        return $this->hasMany(GeneratedDocument::class)->orderByDesc('id');
+    }
+
     protected function casts(): array
     {
         return [
