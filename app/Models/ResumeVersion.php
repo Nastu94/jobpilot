@@ -39,6 +39,12 @@ class ResumeVersion extends Model
             ->orderByDesc('id');
     }
 
+    public function generatedDocumentVersions(): HasMany
+    {
+        return $this->hasMany(GeneratedDocumentVersion::class, 'source_resume_version_id')
+            ->orderByDesc('version_number');
+    }
+
     protected function casts(): array
     {
         return [
