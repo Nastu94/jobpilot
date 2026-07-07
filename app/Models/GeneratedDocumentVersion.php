@@ -29,6 +29,11 @@ class GeneratedDocumentVersion extends Model
         return $this->belongsTo(MatchAnalysis::class);
     }
 
+    public function reviewedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'reviewed_by');
+    }
+
     public function aiOperations(): HasMany
     {
         return $this->hasMany(AiOperation::class)
