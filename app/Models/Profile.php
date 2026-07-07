@@ -32,6 +32,11 @@ class Profile extends Model
         return $this->hasMany(WorkExperience::class)->orderByDesc('start_date');
     }
 
+    public function academicHistory(): HasMany
+    {
+        return $this->hasMany(Education::class)->orderByDesc('start_date');
+    }
+
     protected function casts(): array
     {
         return [
