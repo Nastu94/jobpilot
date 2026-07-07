@@ -47,12 +47,13 @@ class CreateJobApplicationDraft
                     ]);
                 }
 
-                return $application->fresh([
-                    'jobPosting',
-                    'resumeVersion',
-                    'statusHistory',
-                    'generatedDocuments',
-                ]);
+                if ((int) $application->generated_document_version_id !== (int) $version->getKey()) {
+                    throw ValidationException::withMessages([
+                        'generated_document_version' => 'The generated document is already linked to an application using another approved version.',
+                    ]);
+                }
+
+                return $application->fresh($this->applicationRelations());
             }
 
             $posting = JobPosting::query()
@@ -81,6 +82,7 @@ class CreateJobApplicationDraft
                 'profile_id' => $document->profile_id,
                 'job_posting_id' => $posting->getKey(),
                 'resume_version_id' => $sourceResumeVersion->getKey(),
+                'generated_document_version_id' => $version->getKey(),
                 'job_title' => $posting->title,
                 'company_name' => $posting->company_name ?: $posting->company?->name,
                 'status' => 'draft',
@@ -97,12 +99,7 @@ class CreateJobApplicationDraft
                 'job_application_id' => $application->getKey(),
             ])->save();
 
-            return $application->fresh([
-                'jobPosting',
-                'resumeVersion',
-                'statusHistory',
-                'generatedDocuments',
-            ]);
+            return $application->fresh($this->applicationRelations());
         });
     }
 
@@ -146,5 +143,16 @@ class CreateJobApplicationDraft
                 'source_resume_version' => 'The generated document version has no source resume.',
             ]);
         }
+    }
+
+    private function applicationRelations(): array
+    {
+        return [
+            'jobPosting',
+            'resumeVersion',
+            'generatedDocumentVersion',
+            'statusHistory',
+            'generatedDocuments',
+        ];
     }
 }
