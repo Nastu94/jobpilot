@@ -44,6 +44,10 @@ class ReviewGeneratedDocumentVersion
                 'review_status' => $review['decision'],
                 'reviewed_by' => $reviewer->getKey(),
                 'reviewed_at' => now(),
+                'reviewed_content_sha256' => $this->reviewedContentHash(
+                    $version,
+                    $review['decision'],
+                ),
                 'review_notes' => $this->nullableSquished($review['review_notes'] ?? null),
             ])->save();
 
@@ -89,6 +93,17 @@ class ReviewGeneratedDocumentVersion
                 'decision' => 'A version without content or a stored file cannot be approved.',
             ]);
         }
+    }
+
+    private function reviewedContentHash(
+        GeneratedDocumentVersion $version,
+        string $decision,
+    ): ?string {
+        if ($decision !== 'approved' || $version->content === null) {
+            return null;
+        }
+
+        return hash('sha256', $version->content);
     }
 
     private function updateDocumentStatus(GeneratedDocumentVersion $version): void
