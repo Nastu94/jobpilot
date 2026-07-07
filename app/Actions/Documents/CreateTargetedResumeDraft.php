@@ -96,7 +96,10 @@ class CreateTargetedResumeDraft
             }
 
             $existingVersion = $document->versions()
-                ->where('input_hash', $draft['input_hash'])
+                ->where('source_resume_version_id', $sourceResumeVersion->getKey())
+                ->where('match_analysis_id', $analysis->getKey())
+                ->where('generator_key', DeterministicTargetedResumeDraftBuilder::KEY)
+                ->where('generator_version', DeterministicTargetedResumeDraftBuilder::VERSION)
                 ->first();
 
             if ($existingVersion !== null) {
