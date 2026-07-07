@@ -14,7 +14,7 @@ class Language extends Model
 
     public function profiles(): BelongsToMany
     {
-        return $this->belongsToMany(Profile::class)
+        return $this->belongsToMany(Profile::class, 'profile_language')
             ->withPivot([
                 'proficiency_level',
                 'is_native',
