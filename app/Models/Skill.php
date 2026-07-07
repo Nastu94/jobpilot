@@ -31,4 +31,9 @@ class Skill extends Model
             ])
             ->withTimestamps();
     }
+
+    public function jobPostingRequirements(): HasMany
+    {
+        return $this->hasMany(JobPostingRequirement::class)->orderBy('position');
+    }
 }
