@@ -53,6 +53,17 @@ class Profile extends Model
             ->withTimestamps();
     }
 
+    public function languages(): BelongsToMany
+    {
+        return $this->belongsToMany(Language::class)
+            ->withPivot([
+                'proficiency_level',
+                'is_native',
+                'notes',
+            ])
+            ->withTimestamps();
+    }
+
     public function workExperiences(): HasMany
     {
         return $this->hasMany(WorkExperience::class)->orderByDesc('start_date');
