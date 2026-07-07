@@ -36,7 +36,10 @@ return new class extends Migration
             $table->text('notes')->nullable();
             $table->timestamps();
 
-            $table->index(['job_application_id', 'changed_at']);
+            $table->index(
+                ['job_application_id', 'changed_at'],
+                'job_app_status_changed_idx'
+            );
         });
     }
 
