@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class GeneratedDocumentVersion extends Model
 {
@@ -26,6 +27,13 @@ class GeneratedDocumentVersion extends Model
     public function matchAnalysis(): BelongsTo
     {
         return $this->belongsTo(MatchAnalysis::class);
+    }
+
+    public function aiOperations(): HasMany
+    {
+        return $this->hasMany(AiOperation::class)
+            ->orderByDesc('started_at')
+            ->orderByDesc('id');
     }
 
     protected function casts(): array
