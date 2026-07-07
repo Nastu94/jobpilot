@@ -51,6 +51,7 @@ class AuthenticationFoundationTest extends TestCase
         ];
 
         $this->postJson('/register', $payload)->assertCreated();
+        $this->postJson('/logout')->assertNoContent();
 
         $this->postJson('/register', $payload)
             ->assertUnprocessable()
@@ -70,7 +71,9 @@ class AuthenticationFoundationTest extends TestCase
         $this->postJson('/login', [
             'email' => 'candidate@example.com',
             'password' => 'SecurePassword123!',
-        ])->assertNoContent();
+        ])
+            ->assertOk()
+            ->assertJson(['two_factor' => false]);
 
         $this->assertAuthenticatedAs($user);
 
