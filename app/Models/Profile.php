@@ -92,6 +92,11 @@ class Profile extends Model
             ->orderBy('id');
     }
 
+    public function resumes(): HasMany
+    {
+        return $this->hasMany(Resume::class)->orderByDesc('is_primary')->orderBy('id');
+    }
+
     protected function casts(): array
     {
         return [
