@@ -62,7 +62,7 @@ class TechnicalReviewDraftBoundaryTest extends TestCase
             );
             $this->fail('A technical review draft was marked as submitted.');
         } catch (ValidationException $exception) {
-            $this->assertArrayHasKey('generated_document_version', $exception->errors());
+            $this->assertArrayHasKey('submission_readiness', $exception->errors());
             $this->assertSame('draft', $application->fresh()->status);
         }
     }
