@@ -97,6 +97,13 @@ class Profile extends Model
         return $this->hasMany(Resume::class)->orderByDesc('is_primary')->orderBy('id');
     }
 
+    public function jobPostings(): HasMany
+    {
+        return $this->hasMany(JobPosting::class)
+            ->orderByDesc('published_at')
+            ->orderByDesc('id');
+    }
+
     protected function casts(): array
     {
         return [
