@@ -110,6 +110,41 @@ class ReviewJobPostingRequirementTest extends TestCase
         $this->assertCount(0, $posting->fresh()->approvedRequirements);
     }
 
+    public function test_rejected_requirement_cannot_be_linked_to_a_taxonomy_entry(): void
+    {
+        [$user, $posting] = $this->postingOwnedByUser();
+        $skill = Skill::create([
+            'name' => 'PHP',
+            'normalized_name' => 'php',
+        ]);
+        $requirement = JobPostingRequirement::create([
+            'job_posting_id' => $posting->id,
+            'requirement_type' => 'skill',
+            'label' => 'PHP',
+            'source' => 'ai',
+            'review_status' => 'pending',
+        ]);
+
+        try {
+            app(ReviewJobPostingRequirement::class)->execute(
+                requirement: $requirement,
+                reviewer: $user,
+                input: [
+                    'decision' => 'rejected',
+                    'skill_id' => $skill->id,
+                ],
+            );
+
+            $this->fail('A rejected requirement was linked to a taxonomy entry.');
+        } catch (ValidationException) {
+            $requirement->refresh();
+
+            $this->assertSame('pending', $requirement->review_status);
+            $this->assertNull($requirement->skill_id);
+            $this->assertNull($requirement->reviewed_at);
+        }
+    }
+
     public function test_review_rejects_incoherent_taxonomy_associations(): void
     {
         [$user, $posting] = $this->postingOwnedByUser();
