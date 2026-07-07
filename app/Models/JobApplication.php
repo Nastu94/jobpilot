@@ -29,6 +29,11 @@ class JobApplication extends Model
         return $this->belongsTo(ResumeVersion::class);
     }
 
+    public function generatedDocumentVersion(): BelongsTo
+    {
+        return $this->belongsTo(GeneratedDocumentVersion::class);
+    }
+
     public function statusHistory(): HasMany
     {
         return $this->hasMany(JobApplicationStatusHistory::class)
