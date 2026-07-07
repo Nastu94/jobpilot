@@ -27,6 +27,19 @@ class Profile extends Model
         return $this->belongsToMany(Sector::class)->withTimestamps();
     }
 
+    public function skills(): BelongsToMany
+    {
+        return $this->belongsToMany(Skill::class)
+            ->withPivot([
+                'proficiency_level',
+                'years_experience',
+                'source',
+                'is_approved',
+                'notes',
+            ])
+            ->withTimestamps();
+    }
+
     public function workExperiences(): HasMany
     {
         return $this->hasMany(WorkExperience::class)->orderByDesc('start_date');
