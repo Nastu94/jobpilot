@@ -36,6 +36,12 @@ class MatchAnalysis extends Model
             ->orderBy('id');
     }
 
+    public function generatedDocumentVersions(): HasMany
+    {
+        return $this->hasMany(GeneratedDocumentVersion::class)
+            ->orderByDesc('version_number');
+    }
+
     protected function casts(): array
     {
         return [
