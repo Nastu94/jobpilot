@@ -40,6 +40,19 @@ class Profile extends Model
             ->withTimestamps();
     }
 
+    public function software(): BelongsToMany
+    {
+        return $this->belongsToMany(Software::class, 'profile_software')
+            ->withPivot([
+                'proficiency_level',
+                'years_experience',
+                'source',
+                'is_approved',
+                'notes',
+            ])
+            ->withTimestamps();
+    }
+
     public function workExperiences(): HasMany
     {
         return $this->hasMany(WorkExperience::class)->orderByDesc('start_date');
