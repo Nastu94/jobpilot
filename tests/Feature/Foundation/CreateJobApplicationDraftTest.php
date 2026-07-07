@@ -29,6 +29,8 @@ class CreateJobApplicationDraftTest extends TestCase
         $this->assertSame($profile->id, $application->profile_id);
         $this->assertSame($posting->id, $application->job_posting_id);
         $this->assertSame($sourceVersion->id, $application->resume_version_id);
+        $this->assertSame($version->id, $application->generated_document_version_id);
+        $this->assertTrue($application->generatedDocumentVersion->is($version));
         $this->assertSame('Backend Developer', $application->job_title);
         $this->assertSame('Acme', $application->company_name);
         $this->assertSame('draft', $application->status);
@@ -50,9 +52,42 @@ class CreateJobApplicationDraftTest extends TestCase
         $second = $action->execute($version, $owner);
 
         $this->assertSame($first->id, $second->id);
+        $this->assertSame($version->id, $second->generated_document_version_id);
         $this->assertSame($first->id, $document->fresh()->job_application_id);
         $this->assertDatabaseCount('job_applications', 1);
         $this->assertDatabaseCount('job_application_status_histories', 1);
+    }
+
+    public function test_existing_application_cannot_silently_switch_to_another_version(): void
+    {
+        [$owner, , , $sourceVersion, $document, $firstVersion] = $this->scenario();
+        $action = app(CreateJobApplicationDraft::class);
+        $application = $action->execute($firstVersion, $owner);
+        $secondVersion = GeneratedDocumentVersion::create([
+            'generated_document_id' => $document->id,
+            'source_resume_version_id' => $sourceVersion->id,
+            'version_number' => 2,
+            'generation_method' => 'manual',
+            'content_format' => 'markdown',
+            'content' => '# Second approved targeted resume',
+            'review_status' => 'approved',
+            'contains_unverified_claims' => false,
+            'reviewed_by' => $owner->id,
+            'reviewed_at' => now(),
+        ]);
+
+        try {
+            $action->execute($secondVersion, $owner);
+
+            $this->fail('The application silently switched document versions.');
+        } catch (ValidationException $exception) {
+            $this->assertArrayHasKey('generated_document_version', $exception->errors());
+            $this->assertSame(
+                $firstVersion->id,
+                $application->fresh()->generated_document_version_id,
+            );
+            $this->assertDatabaseCount('job_applications', 1);
+        }
     }
 
     public function test_company_relation_is_used_when_posting_snapshot_is_empty(): void
