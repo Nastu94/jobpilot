@@ -20,11 +20,15 @@ class FakeAiProvider implements AiProvider
 
     public function generate(AiRequest $request): AiResponse
     {
-        $content = json_encode([
-            'provider' => 'fake',
-            'operation_type' => $request->operationType,
-            'status' => 'simulated',
-        ], JSON_THROW_ON_ERROR);
+        $payload = $request->operationType === 'job_requirement_extraction'
+            ? ['requirements' => []]
+            : [
+                'provider' => 'fake',
+                'operation_type' => $request->operationType,
+                'status' => 'simulated',
+            ];
+
+        $content = json_encode($payload, JSON_THROW_ON_ERROR);
 
         return new AiResponse(
             content: $content,
