@@ -90,7 +90,9 @@ class CreateJobApplicationDraft
             ]);
 
             $application->statusHistory()->create([
+                'from_status' => null,
                 'status' => 'draft',
+                'changed_by' => $actor->getKey(),
                 'changed_at' => now(),
                 'notes' => 'Draft created from approved generated document version #'.$version->getKey().'.',
             ]);
@@ -151,7 +153,7 @@ class CreateJobApplicationDraft
             'jobPosting',
             'resumeVersion',
             'generatedDocumentVersion',
-            'statusHistory',
+            'statusHistory.changedBy',
             'generatedDocuments',
         ];
     }
