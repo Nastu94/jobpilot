@@ -2,11 +2,10 @@
 
 namespace App\Actions\Applications;
 
-use App\Models\GeneratedDocumentVersion;
 use App\Models\JobApplication;
 use App\Models\JobApplicationStatusHistory;
 use App\Models\User;
-use App\Services\Documents\DeterministicTargetedResumeDraftBuilder;
+use App\Services\Applications\ApplicationSubmissionReadinessChecker;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
@@ -35,6 +34,11 @@ class TransitionJobApplicationStatus
         'withdrawn',
     ];
 
+    public function __construct(
+        private readonly ApplicationSubmissionReadinessChecker $readinessChecker,
+    ) {
+    }
+
     public function execute(
         JobApplication $application,
         User $actor,
@@ -61,7 +65,7 @@ class TransitionJobApplicationStatus
             $this->ensureTransitionIsAllowed($currentStatus, $targetStatus);
 
             if ($currentStatus === 'draft' && $targetStatus === 'applied') {
-                $this->ensureSelectedVersionIsStillUsable($application->generatedDocumentVersion);
+                $this->ensureApplicationIsReady($application);
             }
 
             $changedAt = isset($transition['changed_at'])
@@ -177,35 +181,17 @@ class TransitionJobApplicationStatus
         }
     }
 
-    private function ensureSelectedVersionIsStillUsable(
-        ?GeneratedDocumentVersion $version,
-    ): void {
-        if ($version === null) {
-            throw ValidationException::withMessages([
-                'generated_document_version' => 'The application has no selected document version.',
-            ]);
+    private function ensureApplicationIsReady(JobApplication $application): void
+    {
+        $readiness = $this->readinessChecker->check($application);
+
+        if ($readiness['ready']) {
+            return;
         }
 
-        if ($version->review_status !== 'approved' || $version->contains_unverified_claims) {
-            throw ValidationException::withMessages([
-                'generated_document_version' => 'The selected document version is no longer approved and safe.',
-            ]);
-        }
-
-        if ($version->generator_key === DeterministicTargetedResumeDraftBuilder::KEY) {
-            throw ValidationException::withMessages([
-                'generated_document_version' => 'A technical matching review draft cannot be marked as submitted.',
-            ]);
-        }
-
-        if (
-            trim((string) $version->content) === ''
-            && trim((string) $version->storage_path) === ''
-        ) {
-            throw ValidationException::withMessages([
-                'generated_document_version' => 'The selected document version has no usable content or file.',
-            ]);
-        }
+        throw ValidationException::withMessages([
+            'submission_readiness' => array_column($readiness['blockers'], 'message'),
+        ]);
     }
 
     private function applicationRelations(): array
