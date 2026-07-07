@@ -42,6 +42,13 @@ class MatchAnalysis extends Model
             ->orderByDesc('version_number');
     }
 
+    public function aiOperations(): HasMany
+    {
+        return $this->hasMany(AiOperation::class)
+            ->orderByDesc('started_at')
+            ->orderByDesc('id');
+    }
+
     protected function casts(): array
     {
         return [
