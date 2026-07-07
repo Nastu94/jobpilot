@@ -6,6 +6,7 @@ use App\Models\GeneratedDocumentVersion;
 use App\Models\JobApplication;
 use App\Models\JobApplicationStatusHistory;
 use App\Models\User;
+use App\Services\Documents\DeterministicTargetedResumeDraftBuilder;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
@@ -188,6 +189,12 @@ class TransitionJobApplicationStatus
         if ($version->review_status !== 'approved' || $version->contains_unverified_claims) {
             throw ValidationException::withMessages([
                 'generated_document_version' => 'The selected document version is no longer approved and safe.',
+            ]);
+        }
+
+        if ($version->generator_key === DeterministicTargetedResumeDraftBuilder::KEY) {
+            throw ValidationException::withMessages([
+                'generated_document_version' => 'A technical matching review draft cannot be marked as submitted.',
             ]);
         }
 
