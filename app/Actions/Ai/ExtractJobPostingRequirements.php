@@ -77,15 +77,23 @@ class ExtractJobPostingRequirements
                 ->delete();
 
             foreach ($requirements as $position => $requirement) {
+                $normalizedLabel = Str::lower(Str::squish(
+                    $requirement['normalized_label'] ?? $requirement['label']
+                ));
+
                 $jobPosting->requirements()->create([
                     'requirement_type' => $requirement['type'],
                     'importance' => $requirement['importance'],
                     'label' => $requirement['label'],
-                    'normalized_label' => Str::lower(Str::squish(
-                        $requirement['normalized_label'] ?? $requirement['label']
-                    )),
+                    'normalized_label' => $normalizedLabel,
                     'proficiency_level' => $requirement['proficiency_level'] ?? null,
                     'min_years' => $requirement['min_years'] ?? null,
+                    'proposed_requirement_type' => $requirement['type'],
+                    'proposed_importance' => $requirement['importance'],
+                    'proposed_label' => $requirement['label'],
+                    'proposed_normalized_label' => $normalizedLabel,
+                    'proposed_proficiency_level' => $requirement['proficiency_level'] ?? null,
+                    'proposed_min_years' => $requirement['min_years'] ?? null,
                     'source' => 'ai',
                     'review_status' => 'pending',
                     'confidence_bps' => $requirement['confidence_bps'] ?? null,
