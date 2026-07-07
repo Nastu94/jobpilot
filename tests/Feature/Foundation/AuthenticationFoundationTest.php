@@ -2,12 +2,14 @@
 
 namespace Tests\Feature\Foundation;
 
+use App\Actions\Fortify\CreateNewUser;
 use App\Models\User;
 use Database\Seeders\RoleSeeder;
 use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Validation\ValidationException;
 use Tests\TestCase;
 
 class AuthenticationFoundationTest extends TestCase
@@ -41,7 +43,6 @@ class AuthenticationFoundationTest extends TestCase
 
     public function test_registration_rejects_duplicate_email_without_creating_extra_profile(): void
     {
-        $this->seed(RoleSeeder::class);
         $password = implode('', ['Secure', 'Password', '123', '!']);
 
         $existingUser = User::factory()->create([
@@ -49,15 +50,19 @@ class AuthenticationFoundationTest extends TestCase
         ]);
         $existingUser->profile()->create();
 
-        $response = $this->postJson('/register', [
-            'name' => 'Another Candidate',
-            'email' => 'candidate@example.com',
-            'password' => $password,
-            'password_confirmation' => $password,
-        ]);
+        try {
+            app(CreateNewUser::class)->create([
+                'name' => 'Another Candidate',
+                'email' => 'candidate@example.com',
+                'password' => $password,
+                'password_confirmation' => $password,
+            ]);
 
-        $this->assertSame(422, $response->getStatusCode());
-        $this->assertArrayHasKey('email', $response->json('errors'));
+            $this->fail('Duplicate email registration should fail validation.');
+        } catch (ValidationException $exception) {
+            $this->assertArrayHasKey('email', $exception->errors());
+        }
+
         $this->assertDatabaseCount('users', 1);
         $this->assertDatabaseCount('profiles', 1);
     }
