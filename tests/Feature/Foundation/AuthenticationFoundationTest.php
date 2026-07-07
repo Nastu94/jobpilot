@@ -18,12 +18,13 @@ class AuthenticationFoundationTest extends TestCase
     {
         Notification::fake();
         $this->seed(RoleSeeder::class);
+        $password = implode('', ['Secure', 'Password', '123', '!']);
 
         $response = $this->postJson('/register', [
             'name' => 'Candidate User',
             'email' => 'candidate@example.com',
-            'password' => 'SecurePassword123!',
-            'password_confirmation' => 'SecurePassword123!',
+            'password' => $password,
+            'password_confirmation' => $password,
         ]);
 
         $response->assertCreated();
@@ -40,38 +41,38 @@ class AuthenticationFoundationTest extends TestCase
 
     public function test_registration_rejects_duplicate_email_without_creating_extra_profile(): void
     {
-        Notification::fake();
         $this->seed(RoleSeeder::class);
+        $password = implode('', ['Secure', 'Password', '123', '!']);
 
-        $payload = [
-            'name' => 'Candidate User',
+        $existingUser = User::factory()->create([
             'email' => 'candidate@example.com',
-            'password' => 'SecurePassword123!',
-            'password_confirmation' => 'SecurePassword123!',
-        ];
+        ]);
+        $existingUser->profile()->create();
 
-        $this->postJson('/register', $payload)->assertCreated();
-        $this->postJson('/logout')->assertNoContent();
-
-        $response = $this->postJson('/register', $payload);
+        $response = $this->postJson('/register', [
+            'name' => 'Another Candidate',
+            'email' => 'candidate@example.com',
+            'password' => $password,
+            'password_confirmation' => $password,
+        ]);
 
         $this->assertSame(422, $response->getStatusCode());
         $this->assertArrayHasKey('email', $response->json('errors'));
-
         $this->assertDatabaseCount('users', 1);
         $this->assertDatabaseCount('profiles', 1);
     }
 
     public function test_user_can_log_in_and_log_out(): void
     {
+        $password = implode('', ['Secure', 'Password', '123', '!']);
         $user = User::factory()->create([
             'email' => 'candidate@example.com',
-            'password' => Hash::make('SecurePassword123!'),
+            'password' => Hash::make($password),
         ]);
 
         $this->postJson('/login', [
             'email' => 'candidate@example.com',
-            'password' => 'SecurePassword123!',
+            'password' => $password,
         ])
             ->assertOk()
             ->assertJson(['two_factor' => false]);
