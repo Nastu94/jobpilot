@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class ResumeVersion extends Model
 {
@@ -24,6 +25,11 @@ class ResumeVersion extends Model
     public function resume(): BelongsTo
     {
         return $this->belongsTo(Resume::class);
+    }
+
+    public function jobApplications(): HasMany
+    {
+        return $this->hasMany(JobApplication::class)->orderByDesc('applied_at');
     }
 
     protected function casts(): array
