@@ -1,0 +1,56 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+
+class JobPosting extends Model
+{
+    protected $fillable = [
+        'profile_id',
+        'company_id',
+        'title',
+        'company_name',
+        'source',
+        'external_id',
+        'source_url',
+        'location',
+        'country_code',
+        'remote_type',
+        'employment_type',
+        'seniority',
+        'salary_min',
+        'salary_max',
+        'currency',
+        'status',
+        'processing_status',
+        'description',
+        'raw_content',
+        'content_hash',
+        'published_at',
+        'expires_at',
+        'captured_at',
+    ];
+
+    public function profile(): BelongsTo
+    {
+        return $this->belongsTo(Profile::class);
+    }
+
+    public function company(): BelongsTo
+    {
+        return $this->belongsTo(Company::class);
+    }
+
+    protected function casts(): array
+    {
+        return [
+            'salary_min' => 'integer',
+            'salary_max' => 'integer',
+            'published_at' => 'datetime',
+            'expires_at' => 'datetime',
+            'captured_at' => 'datetime',
+        ];
+    }
+}
