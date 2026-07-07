@@ -18,6 +18,11 @@ class JobApplicationStatusHistory extends Model
         return $this->belongsTo(JobApplication::class);
     }
 
+    public function changedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'changed_by');
+    }
+
     protected function casts(): array
     {
         return [
