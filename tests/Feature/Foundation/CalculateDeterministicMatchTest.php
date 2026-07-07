@@ -64,8 +64,9 @@ class CalculateDeterministicMatchTest extends TestCase
         $analysis = app(CalculateDeterministicMatch::class)->execute($profile, $posting);
         $factors = $analysis->factors->keyBy('label');
 
-        $this->assertSame('completed', $analysis->status);
+        $this->assertSame('partial_coverage', $analysis->status);
         $this->assertSame(5000, $analysis->score_bps);
+        $this->assertStringContainsString('scored 2 of 3 approved requirements', $analysis->summary);
         $this->assertSame(['PHP', 'Laravel', 'Bachelor degree'], $analysis->factors->pluck('label')->all());
         $this->assertFalse($analysis->factors->contains('key', 'requirement:'.$pending->id));
         $this->assertFalse($analysis->factors->contains('key', 'requirement:'.$rejected->id));
@@ -163,15 +164,15 @@ class CalculateDeterministicMatchTest extends TestCase
         $analysis = app(CalculateDeterministicMatch::class)->execute($profile, $posting);
         $factors = $analysis->factors->keyBy('label');
 
-        $this->assertSame(5832, $analysis->score_bps);
+        $this->assertSame(3333, $analysis->score_bps);
         $this->assertSame(5000, $factors['PHP']->score_bps);
         $this->assertSame(3333, $factors['PHP']->contribution_bps);
         $this->assertSame('partial', $factors['PHP']->outcome);
         $this->assertStringContainsString('2.0 years against 4.0 required', $factors['PHP']->explanation);
 
-        $this->assertSame(7500, $factors['English']->score_bps);
-        $this->assertSame(2499, $factors['English']->contribution_bps);
-        $this->assertSame('partial', $factors['English']->outcome);
+        $this->assertSame(0, $factors['English']->score_bps);
+        $this->assertSame(0, $factors['English']->contribution_bps);
+        $this->assertSame('gap', $factors['English']->outcome);
         $this->assertStringContainsString('B1', $factors['English']->explanation);
         $this->assertStringContainsString('B2', $factors['English']->explanation);
     }
