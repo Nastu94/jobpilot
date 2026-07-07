@@ -53,9 +53,10 @@ class AuthenticationFoundationTest extends TestCase
         $this->postJson('/register', $payload)->assertCreated();
         $this->postJson('/logout')->assertNoContent();
 
-        $this->postJson('/register', $payload)
-            ->assertUnprocessable()
-            ->assertJsonValidationErrors('email');
+        $response = $this->postJson('/register', $payload);
+
+        $response->assertUnprocessable();
+        $this->assertArrayHasKey('email', $response->json('errors'));
 
         $this->assertDatabaseCount('users', 1);
         $this->assertDatabaseCount('profiles', 1);
