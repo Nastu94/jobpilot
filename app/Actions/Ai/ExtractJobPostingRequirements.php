@@ -70,7 +70,8 @@ class ExtractJobPostingRequirements
         }
 
         return DB::transaction(function () use ($jobPosting, $requirements): Collection {
-            $jobPosting->requirements()
+            JobPostingRequirement::query()
+                ->where('job_posting_id', $jobPosting->id)
                 ->where('source', 'ai')
                 ->where('review_status', 'pending')
                 ->delete();
@@ -93,9 +94,12 @@ class ExtractJobPostingRequirements
                 ]);
             }
 
-            return $jobPosting->requirements()
+            return JobPostingRequirement::query()
+                ->where('job_posting_id', $jobPosting->id)
                 ->where('source', 'ai')
                 ->where('review_status', 'pending')
+                ->orderBy('position')
+                ->orderBy('id')
                 ->get();
         });
     }
