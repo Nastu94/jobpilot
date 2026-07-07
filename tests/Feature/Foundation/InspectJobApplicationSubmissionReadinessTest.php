@@ -3,6 +3,7 @@
 namespace Tests\Feature\Foundation;
 
 use App\Actions\Applications\InspectJobApplicationSubmissionReadiness;
+use App\Actions\Applications\TransitionJobApplicationStatus;
 use App\Models\GeneratedDocument;
 use App\Models\GeneratedDocumentVersion;
 use App\Models\JobApplication;
@@ -14,6 +15,7 @@ use App\Models\User;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 use Tests\TestCase;
 
 class InspectJobApplicationSubmissionReadinessTest extends TestCase
@@ -57,6 +59,27 @@ class InspectJobApplicationSubmissionReadinessTest extends TestCase
 
         $this->assertFalse($report['ready']);
         $this->assertContains('export_file_checksum_mismatch', $this->codes($report));
+    }
+
+    public function test_tampered_export_prevents_applied_transition(): void
+    {
+        [$owner, $application, , , $path] = $this->scenario();
+        Storage::disk('local')->put($path, 'tampered export');
+
+        try {
+            app(TransitionJobApplicationStatus::class)->execute(
+                $application,
+                $owner,
+                ['status' => 'applied'],
+            );
+
+            $this->fail('A tampered export was accepted for submission.');
+        } catch (ValidationException $exception) {
+            $this->assertArrayHasKey('submission_readiness', $exception->errors());
+            $this->assertSame('draft', $application->fresh()->status);
+            $this->assertNull($application->fresh()->applied_at);
+            $this->assertDatabaseCount('job_application_status_histories', 0);
+        }
     }
 
     public function test_content_changed_after_approval_is_reported(): void
