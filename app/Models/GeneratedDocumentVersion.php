@@ -34,6 +34,13 @@ class GeneratedDocumentVersion extends Model
         return $this->belongsTo(User::class, 'reviewed_by');
     }
 
+    public function jobApplications(): HasMany
+    {
+        return $this->hasMany(JobApplication::class)
+            ->orderByDesc('applied_at')
+            ->orderByDesc('id');
+    }
+
     public function aiOperations(): HasMany
     {
         return $this->hasMany(AiOperation::class)
