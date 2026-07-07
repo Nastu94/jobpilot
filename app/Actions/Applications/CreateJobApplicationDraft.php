@@ -7,6 +7,7 @@ use App\Models\JobApplication;
 use App\Models\JobPosting;
 use App\Models\ResumeVersion;
 use App\Models\User;
+use App\Services\Documents\DeterministicTargetedResumeDraftBuilder;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -119,6 +120,12 @@ class CreateJobApplicationDraft
         if ($version->contains_unverified_claims) {
             throw ValidationException::withMessages([
                 'generated_document_version' => 'A version containing unverified claims cannot create an application draft.',
+            ]);
+        }
+
+        if ($version->generator_key === DeterministicTargetedResumeDraftBuilder::KEY) {
+            throw ValidationException::withMessages([
+                'generated_document_version' => 'A technical matching review draft must be finalized before it can be used for an application.',
             ]);
         }
 
