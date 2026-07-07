@@ -48,17 +48,19 @@ class OllamaProvider implements AiProvider
             ])
             ->throw();
 
-        $content = $response->string('response');
+        $content = (string) $response->json('response', '');
         $durationMs = intdiv(hrtime(true) - $startedAt, 1_000_000);
+        $inputTokens = (int) $response->json('prompt_eval_count', 0);
+        $outputTokens = (int) $response->json('eval_count', 0);
 
         return new AiResponse(
             content: $content,
             provider: $this->key(),
-            model: $response->string('model', $this->model),
+            model: (string) $response->json('model', $this->model),
             requestHash: $request->hash(),
             responseHash: hash('sha256', $content),
-            inputTokens: $response->integer('prompt_eval_count') ?: null,
-            outputTokens: $response->integer('eval_count') ?: null,
+            inputTokens: $inputTokens === 0 ? null : $inputTokens,
+            outputTokens: $outputTokens === 0 ? null : $outputTokens,
             durationMs: $durationMs,
             metadata: [
                 'done_reason' => $response->json('done_reason'),
