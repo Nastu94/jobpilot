@@ -2,7 +2,6 @@
 
 namespace App\Services\Documents;
 
-use App\Models\GeneratedDocumentVersion;
 use App\Models\MatchAnalysis;
 use App\Models\MatchFactor;
 use App\Models\ResumeVersion;
@@ -67,10 +66,8 @@ class DeterministicTargetedResumeDraftBuilder
         $payload = [
             'generator_key' => self::KEY,
             'generator_version' => self::VERSION,
-            'source_resume_version_id' => (int) $sourceResumeVersion->getKey(),
             'source_resume_checksum' => $sourceResumeVersion->checksum_sha256,
             'source_text_hash' => hash('sha256', (string) $sourceResumeVersion->extracted_text),
-            'match_analysis_id' => (int) $analysis->getKey(),
             'match_input_hash' => $analysis->input_hash,
             'match_ruleset' => [
                 'key' => $analysis->ruleset_key,
@@ -78,7 +75,6 @@ class DeterministicTargetedResumeDraftBuilder
             ],
             'factors' => $analysis->factors
                 ->map(fn (MatchFactor $factor): array => [
-                    'id' => (int) $factor->getKey(),
                     'key' => $factor->key,
                     'label' => $factor->label,
                     'category' => $factor->category,
@@ -91,7 +87,6 @@ class DeterministicTargetedResumeDraftBuilder
                         ->map(fn ($evidence): array => [
                             'type' => $evidence->evidence_type,
                             'source_type' => $evidence->source_type,
-                            'source_id' => $evidence->source_id,
                             'source_reference' => $evidence->source_reference,
                         ])
                         ->values()
