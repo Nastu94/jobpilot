@@ -15,6 +15,7 @@ class Profile extends Model
         'desired_ral_min',
         'desired_ral_max',
         'remote_preference',
+        'willing_to_relocate',
     ];
 
     public function user(): BelongsTo
@@ -84,11 +85,19 @@ class Profile extends Model
         return $this->hasMany(Project::class)->orderByDesc('start_date');
     }
 
+    public function locationPreferences(): HasMany
+    {
+        return $this->hasMany(ProfileLocationPreference::class)
+            ->orderBy('position')
+            ->orderBy('id');
+    }
+
     protected function casts(): array
     {
         return [
             'desired_ral_min' => 'integer',
             'desired_ral_max' => 'integer',
+            'willing_to_relocate' => 'boolean',
         ];
     }
 }
