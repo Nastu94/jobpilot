@@ -123,6 +123,13 @@ class Profile extends Model
         return $this->hasMany(GeneratedDocument::class)->orderByDesc('id');
     }
 
+    public function aiOperations(): HasMany
+    {
+        return $this->hasMany(AiOperation::class)
+            ->orderByDesc('started_at')
+            ->orderByDesc('id');
+    }
+
     protected function casts(): array
     {
         return [
