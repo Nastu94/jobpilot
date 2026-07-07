@@ -49,6 +49,13 @@ class JobPosting extends Model
         return $this->hasMany(JobApplication::class)->orderByDesc('applied_at');
     }
 
+    public function matchAnalyses(): HasMany
+    {
+        return $this->hasMany(MatchAnalysis::class)
+            ->orderByDesc('calculated_at')
+            ->orderByDesc('id');
+    }
+
     protected function casts(): array
     {
         return [
