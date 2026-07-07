@@ -111,6 +111,13 @@ class Profile extends Model
             ->orderByDesc('id');
     }
 
+    public function matchAnalyses(): HasMany
+    {
+        return $this->hasMany(MatchAnalysis::class)
+            ->orderByDesc('calculated_at')
+            ->orderByDesc('id');
+    }
+
     protected function casts(): array
     {
         return [
