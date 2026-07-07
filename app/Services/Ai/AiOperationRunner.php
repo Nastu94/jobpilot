@@ -66,6 +66,7 @@ class AiOperationRunner
             $operation->forceFill([
                 'status' => 'failed',
                 'duration_ms' => intdiv(hrtime(true) - $startedAtNs, 1_000_000),
+                'cost_micros' => $provider->isPaid() ? null : 0,
                 'error_code' => mb_substr(class_basename($exception), 0, 100),
                 'error_message' => 'The AI operation failed before completion.',
                 'completed_at' => now(),
