@@ -7,7 +7,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class SkillAlias extends Model
 {
-    protected $guarded = [];
+    protected $fillable = [
+        'skill_id',
+        'alias',
+        'normalized_alias',
+    ];
 
     public function skill(): BelongsTo
     {
