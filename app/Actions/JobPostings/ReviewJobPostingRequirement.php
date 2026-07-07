@@ -117,6 +117,14 @@ class ReviewJobPostingRequirement
 
     private function ensureAssociationsAreCoherent(array $review): void
     {
+        foreach (['skill_id', 'software_id', 'language_id'] as $association) {
+            if ($review['decision'] === 'rejected' && $review[$association] !== null) {
+                throw ValidationException::withMessages([
+                    $association => 'Rejected requirements cannot be linked to a taxonomy entry.',
+                ]);
+            }
+        }
+
         $allowedAssociation = match ($review['requirement_type']) {
             'skill' => 'skill_id',
             'software' => 'software_id',
