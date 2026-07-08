@@ -5,6 +5,7 @@ namespace App\Services\Applications;
 use App\Models\JobApplication;
 use App\Models\JobApplicationDocumentAccessHistory;
 use App\Models\JobApplicationDocumentVersionHistory;
+use App\Models\JobApplicationInteraction;
 use App\Models\JobApplicationStatusHistory;
 use App\Models\JobApplicationTrackingHistory;
 use App\Models\User;
@@ -16,6 +17,8 @@ class JobApplicationTimelineBuilder
 
     public const TYPE_TRACKING_UPDATED = 'tracking_updated';
 
+    public const TYPE_INTERACTION_RECORDED = 'interaction_recorded';
+
     public const TYPE_DOCUMENT_VERSION_SELECTED = 'document_version_selected';
 
     public const TYPE_DOCUMENT_ACCESSED = 'document_accessed';
@@ -23,6 +26,7 @@ class JobApplicationTimelineBuilder
     public const EVENT_TYPES = [
         self::TYPE_STATUS_CHANGED,
         self::TYPE_TRACKING_UPDATED,
+        self::TYPE_INTERACTION_RECORDED,
         self::TYPE_DOCUMENT_VERSION_SELECTED,
         self::TYPE_DOCUMENT_ACCESSED,
     ];
@@ -30,6 +34,7 @@ class JobApplicationTimelineBuilder
     private const TYPE_PRIORITY = [
         self::TYPE_STATUS_CHANGED => 10,
         self::TYPE_TRACKING_UPDATED => 20,
+        self::TYPE_INTERACTION_RECORDED => 25,
         self::TYPE_DOCUMENT_VERSION_SELECTED => 30,
         self::TYPE_DOCUMENT_ACCESSED => 40,
     ];
@@ -48,6 +53,10 @@ class JobApplicationTimelineBuilder
 
         foreach ($application->trackingHistory as $history) {
             $events[] = $this->trackingEvent($history);
+        }
+
+        foreach ($application->interactions as $interaction) {
+            $events[] = $this->interactionEvent($interaction);
         }
 
         foreach ($application->documentVersionHistory as $history) {
@@ -150,6 +159,26 @@ class JobApplicationTimelineBuilder
                     'next_action_at' => $history->next_action_at?->toISOString(),
                     'notes' => $history->notes,
                 ],
+            ],
+        );
+    }
+
+    private function interactionEvent(JobApplicationInteraction $interaction): array
+    {
+        return $this->event(
+            self::TYPE_INTERACTION_RECORDED,
+            $interaction->getKey(),
+            $interaction->occurred_at,
+            $interaction->recordedBy,
+            'application_interaction_recorded',
+            [
+                'client_reference' => $interaction->client_reference,
+                'interaction_type' => $interaction->interaction_type,
+                'direction' => $interaction->direction,
+                'subject' => $interaction->subject,
+                'contact_name' => $interaction->contact_name,
+                'contact_email' => $interaction->contact_email,
+                'notes' => $interaction->notes,
             ],
         );
     }
