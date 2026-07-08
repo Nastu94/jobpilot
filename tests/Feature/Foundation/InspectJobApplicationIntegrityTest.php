@@ -221,6 +221,7 @@ class InspectJobApplicationIntegrityTest extends TestCase
                 ],
             ],
         );
+        $event = $event->fresh();
         $event->forceFill([
             'status' => 'planned',
             'resolved_at' => '2026-07-08 12:00:00',
