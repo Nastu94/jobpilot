@@ -39,6 +39,7 @@ class BuildJobApplicationWorkspace
                 'generatedDocumentVersion.generatedDocument',
                 'generatedDocumentVersion.sourceResumeVersion.resume',
                 'statusHistory.changedBy',
+                'submissionConfirmation.recordedBy',
                 'trackingHistory.changedBy',
                 'interactions.recordedBy',
                 'scheduledEvents.statusHistory.changedBy',
