@@ -45,7 +45,10 @@ class JobApplicationTrackingRecorder
             ->lockForUpdate()
             ->first();
 
-        if ($latestHistory !== null && $changedAt < $latestHistory->changed_at) {
+        if (
+            $latestHistory !== null
+            && $changedAt->getTimestamp() < $latestHistory->changed_at->getTimestamp()
+        ) {
             throw ValidationException::withMessages([
                 'changed_at' => 'The tracking change cannot precede the latest tracking history entry.',
             ]);
