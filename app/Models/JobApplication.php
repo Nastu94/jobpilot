@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class JobApplication extends Model
 {
@@ -45,6 +46,11 @@ class JobApplication extends Model
     public function generatedDocumentVersion(): BelongsTo
     {
         return $this->belongsTo(GeneratedDocumentVersion::class);
+    }
+
+    public function submissionConfirmation(): HasOne
+    {
+        return $this->hasOne(JobApplicationSubmissionConfirmation::class);
     }
 
     public function statusHistory(): HasMany
