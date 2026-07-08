@@ -111,6 +111,11 @@ class JobApplicationDocumentFileReader
         $contentChecksum = strtolower(trim((string) $descriptor['content_sha256']));
         $fileSize = (int) $descriptor['file_size'];
         $versionId = (int) $descriptor['generated_document_version_id'];
+        $sourceResumeVersionId = (int) $descriptor['source_resume_version_id'];
+
+        if ($versionId < 1 || $sourceResumeVersionId < 1) {
+            $this->fail('The application document source identifiers are not valid.');
+        }
 
         if (
             $filename === ''
@@ -174,7 +179,7 @@ class JobApplicationDocumentFileReader
             'application_id' => $application->getKey(),
             'document_source' => $descriptor['document_source'],
             'generated_document_version_id' => $versionId,
-            'source_resume_version_id' => (int) $descriptor['source_resume_version_id'],
+            'source_resume_version_id' => $sourceResumeVersionId,
             'filename' => $filename,
             'mime_type' => $mimeType,
             'file_size' => $actualSize,
@@ -192,8 +197,7 @@ class JobApplicationDocumentFileReader
         string $path,
     ): void {
         if (
-            $versionId < 1
-            || $path === ''
+            $path === ''
             || str_starts_with($path, '/')
             || str_contains($path, '\\')
             || str_contains($path, "\0")
