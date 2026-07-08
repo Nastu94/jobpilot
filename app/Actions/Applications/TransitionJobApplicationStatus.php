@@ -6,6 +6,7 @@ use App\Models\JobApplication;
 use App\Models\JobApplicationStatusHistory;
 use App\Models\User;
 use App\Services\Applications\ApplicationSubmissionReadinessChecker;
+use App\Services\Applications\JobApplicationStatusWorkflow;
 use App\Services\Applications\JobApplicationTrackingRecorder;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -17,27 +18,10 @@ use Illuminate\Validation\ValidationException;
 
 class TransitionJobApplicationStatus
 {
-    private const TRANSITIONS = [
-        'draft' => ['applied', 'withdrawn'],
-        'applied' => ['screening', 'assessment', 'interview', 'offer', 'rejected', 'withdrawn'],
-        'screening' => ['assessment', 'interview', 'offer', 'rejected', 'withdrawn'],
-        'assessment' => ['interview', 'offer', 'rejected', 'withdrawn'],
-        'interview' => ['assessment', 'offer', 'rejected', 'withdrawn'],
-        'offer' => ['hired', 'rejected', 'withdrawn'],
-        'hired' => [],
-        'rejected' => [],
-        'withdrawn' => [],
-    ];
-
-    private const TERMINAL_STATUSES = [
-        'hired',
-        'rejected',
-        'withdrawn',
-    ];
-
     public function __construct(
         private readonly ApplicationSubmissionReadinessChecker $readinessChecker,
         private readonly JobApplicationTrackingRecorder $trackingRecorder,
+        private readonly JobApplicationStatusWorkflow $statusWorkflow,
     ) {
     }
 
@@ -99,7 +83,7 @@ class TransitionJobApplicationStatus
 
             if (
                 $nextActionAt !== null
-                && ! in_array($targetStatus, self::TERMINAL_STATUSES, true)
+                && ! $this->statusWorkflow->isTerminal($targetStatus)
                 && $nextActionAt->lt($changedAt)
             ) {
                 throw ValidationException::withMessages([
@@ -134,7 +118,7 @@ class TransitionJobApplicationStatus
                 );
             }
 
-            if (in_array($targetStatus, self::TERMINAL_STATUSES, true)) {
+            if ($this->statusWorkflow->isTerminal($targetStatus)) {
                 $updates['next_action_at'] = null;
             } elseif ($hasNextActionInput) {
                 $updates['next_action_at'] = $nextActionAt;
@@ -163,14 +147,16 @@ class TransitionJobApplicationStatus
 
     private function validatedTransition(array $input): array
     {
-        $statuses = array_keys(self::TRANSITIONS);
-
         return Validator::make(['transition' => $input], [
             'transition' => [
                 'required',
                 'array:status,changed_at,notes,application_channel,external_reference,next_action_at',
             ],
-            'transition.status' => ['required', 'string', Rule::in($statuses)],
+            'transition.status' => [
+                'required',
+                'string',
+                Rule::in($this->statusWorkflow->statuses()),
+            ],
             'transition.changed_at' => ['nullable', 'date'],
             'transition.notes' => ['nullable', 'string', 'max:2000'],
             'transition.application_channel' => ['nullable', 'string', 'max:50'],
@@ -181,13 +167,13 @@ class TransitionJobApplicationStatus
 
     private function ensureTransitionIsAllowed(string $currentStatus, string $targetStatus): void
     {
-        if (! array_key_exists($currentStatus, self::TRANSITIONS)) {
+        if (! $this->statusWorkflow->supports($currentStatus)) {
             throw ValidationException::withMessages([
                 'status' => 'The current application status is not supported by this workflow.',
             ]);
         }
 
-        if (! in_array($targetStatus, self::TRANSITIONS[$currentStatus], true)) {
+        if (! $this->statusWorkflow->canTransition($currentStatus, $targetStatus)) {
             throw ValidationException::withMessages([
                 'status' => sprintf(
                     'The transition from %s to %s is not allowed.',
