@@ -24,6 +24,11 @@ class JobApplicationFollowUpQueueBuilder
         'draft' => 5,
     ];
 
+    public function __construct(
+        private readonly JobApplicationFollowUpContextBuilder $contextBuilder,
+    ) {
+    }
+
     public function build(
         Profile $profile,
         CarbonImmutable $referenceAt,
@@ -42,10 +47,6 @@ class JobApplicationFollowUpQueueBuilder
             ])
             ->get();
 
-        $startOfDay = $referenceAt->startOfDay();
-        $endOfDay = $referenceAt->endOfDay();
-        $upcomingEnd = $endOfDay->addDays($upcomingDays);
-
         $classified = [
             'overdue' => collect(),
             'today' => collect(),
@@ -55,21 +56,15 @@ class JobApplicationFollowUpQueueBuilder
         ];
 
         foreach ($applications as $application) {
-            $followUp = $this->followUpContext($application);
-            $bucket = $this->bucketFor(
-                $followUp['follow_up_at'],
-                $startOfDay,
-                $endOfDay,
-                $upcomingEnd,
+            $followUp = $this->contextBuilder->build(
+                $application,
+                $referenceAt,
+                $upcomingDays,
             );
+            $bucket = $followUp['urgency'];
 
             $classified[$bucket]->push(
-                $this->item(
-                    $application,
-                    $followUp,
-                    $bucket,
-                    $startOfDay,
-                ),
+                $this->item($application, $followUp),
             );
         }
 
@@ -104,72 +99,10 @@ class JobApplicationFollowUpQueueBuilder
         ];
     }
 
-    private function followUpContext(JobApplication $application): array
-    {
-        $nextActionAt = $application->next_action_at?->toImmutable();
-        $scheduledEvent = $application->scheduledEvents->first();
-        $scheduledAt = $scheduledEvent?->starts_at?->toImmutable();
-
-        if ($nextActionAt === null && $scheduledAt === null) {
-            return [
-                'follow_up_at' => null,
-                'follow_up_source' => null,
-                'scheduled_event' => null,
-            ];
-        }
-
-        if (
-            $scheduledAt !== null
-            && ($nextActionAt === null || $scheduledAt->lte($nextActionAt))
-        ) {
-            return [
-                'follow_up_at' => $scheduledAt,
-                'follow_up_source' => 'scheduled_event',
-                'scheduled_event' => $scheduledEvent,
-            ];
-        }
-
-        return [
-            'follow_up_at' => $nextActionAt,
-            'follow_up_source' => 'next_action',
-            'scheduled_event' => $scheduledEvent,
-        ];
-    }
-
-    private function bucketFor(
-        ?CarbonImmutable $followUpAt,
-        CarbonImmutable $startOfDay,
-        CarbonImmutable $endOfDay,
-        CarbonImmutable $upcomingEnd,
-    ): string {
-        if ($followUpAt === null) {
-            return 'unscheduled';
-        }
-
-        if ($followUpAt->lt($startOfDay)) {
-            return 'overdue';
-        }
-
-        if ($followUpAt->lte($endOfDay)) {
-            return 'today';
-        }
-
-        if ($followUpAt->lte($upcomingEnd)) {
-            return 'upcoming';
-        }
-
-        return 'later';
-    }
-
     private function item(
         JobApplication $application,
         array $followUp,
-        string $bucket,
-        CarbonImmutable $startOfDay,
     ): array {
-        $nextActionAt = $application->next_action_at?->toImmutable();
-        $followUpAt = $followUp['follow_up_at'];
-        $scheduledEvent = $followUp['scheduled_event'];
         $latestTrackingChange = $application->trackingHistory->last()?->changed_at;
 
         return [
@@ -180,50 +113,15 @@ class JobApplicationFollowUpQueueBuilder
             'application_channel' => $application->application_channel,
             'external_reference' => $application->external_reference,
             'applied_at' => $application->applied_at?->toISOString(),
-            'next_action_at' => $nextActionAt?->toISOString(),
-            'follow_up_at' => $followUpAt?->toISOString(),
+            'next_action_at' => $followUp['next_action_at'],
+            'follow_up_at' => $followUp['follow_up_at'],
             'follow_up_source' => $followUp['follow_up_source'],
-            'scheduled_event' => $scheduledEvent === null
-                ? null
-                : [
-                    'id' => $scheduledEvent->getKey(),
-                    'event_type' => $scheduledEvent->event_type,
-                    'title' => $scheduledEvent->title,
-                    'starts_at' => $scheduledEvent->starts_at->toISOString(),
-                    'ends_at' => $scheduledEvent->ends_at?->toISOString(),
-                    'location' => $scheduledEvent->location,
-                ],
+            'scheduled_event' => $followUp['scheduled_event'],
             'latest_tracking_change_at' => $latestTrackingChange?->toISOString(),
-            'urgency' => $bucket,
-            'reason_code' => $this->reasonCode(
-                $bucket,
-                $followUp['follow_up_source'],
-            ),
-            'days_from_reference' => $followUpAt === null
-                ? null
-                : (int) $startOfDay->diffInDays($followUpAt->startOfDay(), false),
+            'urgency' => $followUp['urgency'],
+            'reason_code' => $followUp['reason_code'],
+            'days_from_reference' => $followUp['days_from_reference'],
         ];
-    }
-
-    private function reasonCode(string $bucket, ?string $source): string
-    {
-        if ($source === 'scheduled_event') {
-            return match ($bucket) {
-                'overdue' => 'scheduled_event_overdue',
-                'today' => 'scheduled_event_due_today',
-                'upcoming' => 'scheduled_event_upcoming',
-                'later' => 'scheduled_event_scheduled_later',
-                'unscheduled' => 'active_application_without_follow_up',
-            };
-        }
-
-        return match ($bucket) {
-            'overdue' => 'next_action_overdue',
-            'today' => 'next_action_due_today',
-            'upcoming' => 'next_action_upcoming',
-            'later' => 'next_action_scheduled_later',
-            'unscheduled' => 'active_application_without_next_action',
-        };
     }
 
     private function sortScheduled(Collection $items): Collection
