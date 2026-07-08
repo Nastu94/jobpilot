@@ -33,7 +33,7 @@ class JobApplicationFollowUpQueueBuilder
         $applications = JobApplication::query()
             ->where('profile_id', $profile->getKey())
             ->whereNotIn('status', self::TERMINAL_STATUSES)
-            ->with(['jobPosting', 'trackingHistory' => fn ($query) => $query->latest('changed_at')->limit(1)])
+            ->with('trackingHistory')
             ->get();
 
         $startOfDay = $referenceAt->startOfDay();
@@ -125,7 +125,7 @@ class JobApplicationFollowUpQueueBuilder
         CarbonImmutable $startOfDay,
     ): array {
         $nextActionAt = $application->next_action_at?->toImmutable();
-        $latestTrackingChange = $application->trackingHistory->first()?->changed_at;
+        $latestTrackingChange = $application->trackingHistory->last()?->changed_at;
 
         return [
             'application_id' => $application->getKey(),
