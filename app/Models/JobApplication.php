@@ -75,6 +75,13 @@ class JobApplication extends Model
             ->orderBy('id');
     }
 
+    public function interactions(): HasMany
+    {
+        return $this->hasMany(JobApplicationInteraction::class)
+            ->orderBy('occurred_at')
+            ->orderBy('id');
+    }
+
     public function generatedDocuments(): HasMany
     {
         return $this->hasMany(GeneratedDocument::class)->orderByDesc('id');
