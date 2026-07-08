@@ -6,6 +6,7 @@ use App\Models\JobApplication;
 use App\Models\JobApplicationStatusHistory;
 use App\Models\User;
 use App\Services\Applications\ApplicationSubmissionReadinessChecker;
+use App\Services\Applications\JobApplicationTrackingRecorder;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
@@ -36,6 +37,7 @@ class TransitionJobApplicationStatus
 
     public function __construct(
         private readonly ApplicationSubmissionReadinessChecker $readinessChecker,
+        private readonly JobApplicationTrackingRecorder $trackingRecorder,
     ) {
     }
 
@@ -138,7 +140,15 @@ class TransitionJobApplicationStatus
                 $updates['next_action_at'] = $nextActionAt;
             }
 
+            $trackingBefore = $this->trackingRecorder->snapshot($application);
             $application->forceFill($updates)->save();
+            $this->trackingRecorder->record(
+                $application,
+                $actor,
+                $changedAt,
+                JobApplicationTrackingRecorder::SOURCE_STATUS_TRANSITION,
+                $trackingBefore,
+            );
             $application->statusHistory()->create([
                 'from_status' => $currentStatus,
                 'status' => $targetStatus,
@@ -229,6 +239,7 @@ class TransitionJobApplicationStatus
             'resumeVersion',
             'generatedDocumentVersion',
             'statusHistory.changedBy',
+            'trackingHistory.changedBy',
             'generatedDocuments',
         ];
     }
