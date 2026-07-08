@@ -142,7 +142,7 @@ class ScheduleJobApplicationEvent
             $meetingUrl = $input['meeting_url'] ?? null;
 
             if (
-                $meetingUrl !== null
+                is_string($meetingUrl)
                 && ! str_starts_with($meetingUrl, 'https://')
                 && ! str_starts_with($meetingUrl, 'http://')
             ) {
@@ -183,11 +183,16 @@ class ScheduleJobApplicationEvent
         JobApplicationScheduledEvent $existing,
         array $attributes,
     ): bool {
+        $existingEndsAt = $existing->ends_at?->getTimestamp();
+        $incomingEndsAt = $attributes['ends_at'] === null
+            ? null
+            : $attributes['ends_at']->getTimestamp();
+
         return (int) $existing->created_by === (int) $attributes['created_by']
             && $existing->event_type === $attributes['event_type']
             && $existing->title === $attributes['title']
             && $existing->starts_at->getTimestamp() === $attributes['starts_at']->getTimestamp()
-            && $existing->ends_at?->getTimestamp() === $attributes['ends_at']?->getTimestamp()
+            && $existingEndsAt === $incomingEndsAt
             && $existing->location === $attributes['location']
             && $existing->meeting_url === $attributes['meeting_url']
             && $existing->contact_name === $attributes['contact_name']
