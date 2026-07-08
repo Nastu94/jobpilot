@@ -68,6 +68,13 @@ class JobApplication extends Model
             ->orderBy('id');
     }
 
+    public function documentAccessHistory(): HasMany
+    {
+        return $this->hasMany(JobApplicationDocumentAccessHistory::class)
+            ->orderBy('accessed_at')
+            ->orderBy('id');
+    }
+
     public function generatedDocuments(): HasMany
     {
         return $this->hasMany(GeneratedDocument::class)->orderByDesc('id');
