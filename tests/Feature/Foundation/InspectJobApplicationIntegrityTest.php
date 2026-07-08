@@ -212,7 +212,7 @@ class InspectJobApplicationIntegrityTest extends TestCase
             $owner,
             [
                 'client_reference' => 'reschedule-001',
-                'changed_at' => '2026-07-08 11:30:00',
+                'changed_at' => '2026-07-08 12:00:00',
                 'replacement_event' => [
                     'client_reference' => 'event-new',
                     'event_type' => 'interview',
@@ -223,7 +223,7 @@ class InspectJobApplicationIntegrityTest extends TestCase
         );
         $event->forceFill([
             'status' => 'planned',
-            'resolved_at' => '2026-07-08 11:30:00',
+            'resolved_at' => '2026-07-08 12:00:00',
         ])->save();
 
         $audit = app(InspectJobApplicationIntegrity::class)->execute(
