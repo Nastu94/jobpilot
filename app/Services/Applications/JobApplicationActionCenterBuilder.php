@@ -47,7 +47,7 @@ class JobApplicationActionCenterBuilder
             $this->inspectHandoff($isDraft),
             $this->prepareHandoff($isDraft, $readiness),
             $this->confirmSubmission($application, $isDraft, $readiness),
-            $this->readDocument($application),
+            $this->readDocument($application, $readiness),
             $this->transitionStatus($application, $readiness),
             $this->available('record_interaction'),
             $this->scheduleEvent($isTerminal),
@@ -139,8 +139,17 @@ class JobApplicationActionCenterBuilder
         return $this->available('confirm_manual_submission');
     }
 
-    private function readDocument(JobApplication $application): array
-    {
+    private function readDocument(
+        JobApplication $application,
+        array $readiness,
+    ): array {
+        if ($application->status === 'draft' && ! $readiness['ready']) {
+            return $this->blocked(
+                'read_application_document',
+                $readiness['blockers'],
+            );
+        }
+
         try {
             $file = $this->documentReader->read($application);
         } catch (ValidationException $exception) {
