@@ -22,13 +22,7 @@ class BuildJobApplicationTimeline
         array $input = [],
     ): array {
         $application = JobApplication::query()
-            ->with([
-                'profile',
-                'statusHistory.changedBy',
-                'trackingHistory.changedBy',
-                'documentVersionHistory.changedBy',
-                'documentAccessHistory.accessedBy',
-            ])
+            ->with('profile')
             ->findOrFail($application->getKey());
 
         if ((int) $application->profile->user_id !== (int) $actor->getKey()) {
@@ -46,6 +40,13 @@ class BuildJobApplicationTimeline
             'options.direction' => ['nullable', 'string', Rule::in(['asc', 'desc'])],
             'options.limit' => ['nullable', 'integer', 'min:1', 'max:200'],
         ])->validate()['options'];
+
+        $application->load([
+            'statusHistory.changedBy',
+            'trackingHistory.changedBy',
+            'documentVersionHistory.changedBy',
+            'documentAccessHistory.accessedBy',
+        ]);
 
         return $this->builder->build(
             $application,
