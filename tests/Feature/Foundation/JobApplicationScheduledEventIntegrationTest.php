@@ -7,6 +7,7 @@ use App\Actions\Applications\BuildJobApplicationTimeline;
 use App\Actions\Applications\ResolveJobApplicationScheduledEvent;
 use App\Actions\Applications\ScheduleJobApplicationEvent;
 use App\Models\JobApplication;
+use App\Models\JobApplicationScheduledEvent;
 use App\Models\Profile;
 use App\Models\User;
 use App\Services\Applications\JobApplicationTimelineBuilder;
@@ -139,7 +140,7 @@ class JobApplicationScheduledEventIntegrationTest extends TestCase
         );
 
         $this->assertSame(
-            [$cancelledApplication->id, $completedApplication->id],
+            [$completedApplication->id, $cancelledApplication->id],
             array_column($queue['buckets']['unscheduled'], 'application_id'),
         );
         $this->assertSame(0, $queue['summary']['overdue']['total']);
@@ -207,7 +208,7 @@ class JobApplicationScheduledEventIntegrationTest extends TestCase
         JobApplication $application,
         User $owner,
         string $startsAt,
-    ) {
+    ): JobApplicationScheduledEvent {
         return app(ScheduleJobApplicationEvent::class)->execute(
             $application,
             $owner,
