@@ -214,7 +214,7 @@ class JobApplicationSubmissionSnapshotTest extends TestCase
 
     private function snapshot(JobApplication $application): array
     {
-        return $application->only([
+        $snapshot = $application->only([
             'submitted_generated_document_version_id',
             'submitted_source_resume_version_id',
             'submitted_document_version_number',
@@ -227,7 +227,11 @@ class JobApplicationSubmissionSnapshotTest extends TestCase
             'submitted_document_storage_path',
             'submitted_document_generator_key',
             'submitted_document_generator_version',
-            'submitted_document_reviewed_at',
         ]);
+        $snapshot['submitted_document_reviewed_at'] = $application
+            ->submitted_document_reviewed_at
+            ?->toISOString();
+
+        return $snapshot;
     }
 }
