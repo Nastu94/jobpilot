@@ -61,6 +61,13 @@ class JobApplication extends Model
             ->orderBy('id');
     }
 
+    public function documentVersionHistory(): HasMany
+    {
+        return $this->hasMany(JobApplicationDocumentVersionHistory::class)
+            ->orderBy('changed_at')
+            ->orderBy('id');
+    }
+
     public function generatedDocuments(): HasMany
     {
         return $this->hasMany(GeneratedDocument::class)->orderByDesc('id');
