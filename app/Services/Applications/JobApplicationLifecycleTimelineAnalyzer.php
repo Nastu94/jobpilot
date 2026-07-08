@@ -4,6 +4,7 @@ namespace App\Services\Applications;
 
 use App\Models\JobApplication;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Collection;
 
 class JobApplicationLifecycleTimelineAnalyzer
 {
@@ -46,7 +47,7 @@ class JobApplicationLifecycleTimelineAnalyzer
             ];
         }
 
-        $history = $application->statusHistory->values();
+        $history = $this->normalizedHistory($application, $appliedAt);
 
         if ($appliedAt->gt($referenceAt)) {
             $reasons[] = 'applied_after_reference';
@@ -122,13 +123,38 @@ class JobApplicationLifecycleTimelineAnalyzer
         return [
             'reasons' => $reasons,
             'timeline' => $reasons === []
-                ? $this->timeline($application, $appliedAt, $referenceAt)
+                ? $this->timeline(
+                    $application,
+                    $history,
+                    $appliedAt,
+                    $referenceAt,
+                )
                 : null,
         ];
     }
 
+    private function normalizedHistory(
+        JobApplication $application,
+        CarbonImmutable $appliedAt,
+    ): Collection {
+        $history = $application->statusHistory->values();
+        $first = $history->first();
+
+        if (
+            $first !== null
+            && $first->from_status === null
+            && $first->status === 'draft'
+            && ! $first->changed_at->gt($appliedAt)
+        ) {
+            return $history->slice(1)->values();
+        }
+
+        return $history;
+    }
+
     private function timeline(
         JobApplication $application,
+        Collection $history,
         CarbonImmutable $appliedAt,
         CarbonImmutable $referenceAt,
     ): array {
@@ -139,7 +165,7 @@ class JobApplicationLifecycleTimelineAnalyzer
         $currentStatus = 'applied';
         $enteredAt = $appliedAt;
 
-        foreach ($application->statusHistory as $index => $entry) {
+        foreach ($history as $index => $entry) {
             $changedAt = $entry->changed_at->toImmutable();
             $transitions[] = [
                 'from_status' => $entry->from_status,
