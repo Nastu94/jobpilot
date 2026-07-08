@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class JobApplicationScheduledEvent extends Model
 {
@@ -53,6 +54,22 @@ class JobApplicationScheduledEvent extends Model
         )
             ->orderBy('changed_at')
             ->orderBy('id');
+    }
+
+    public function replacementRecord(): HasOne
+    {
+        return $this->hasOne(
+            JobApplicationScheduledEventReplacement::class,
+            'previous_scheduled_event_id',
+        );
+    }
+
+    public function replacesRecord(): HasOne
+    {
+        return $this->hasOne(
+            JobApplicationScheduledEventReplacement::class,
+            'replacement_scheduled_event_id',
+        );
     }
 
     protected function casts(): array
