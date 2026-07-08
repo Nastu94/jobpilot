@@ -24,6 +24,18 @@ class JobApplication extends Model
         'submitted_document_generator_key',
         'submitted_document_generator_version',
         'submitted_document_reviewed_at',
+        'submitted_context_captured_at',
+        'submitted_job_posting_id',
+        'submitted_job_title',
+        'submitted_company_name',
+        'submitted_job_source',
+        'submitted_job_location',
+        'submitted_job_country_code',
+        'submitted_job_remote_type',
+        'submitted_job_employment_type',
+        'submitted_job_seniority',
+        'submitted_application_channel',
+        'submitted_external_reference',
         'created_at',
         'updated_at',
     ];
@@ -113,6 +125,7 @@ class JobApplication extends Model
             'applied_at' => 'datetime',
             'next_action_at' => 'datetime',
             'submitted_document_reviewed_at' => 'datetime',
+            'submitted_context_captured_at' => 'datetime',
         ];
     }
 }
