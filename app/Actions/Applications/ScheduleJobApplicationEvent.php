@@ -6,6 +6,7 @@ use App\Models\JobApplication;
 use App\Models\JobApplicationScheduledEvent;
 use App\Models\User;
 use App\Services\Applications\JobApplicationScheduledEventPayloadBuilder;
+use App\Services\Applications\JobApplicationStatusWorkflow;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
@@ -13,14 +14,9 @@ use Illuminate\Validation\ValidationException;
 
 class ScheduleJobApplicationEvent
 {
-    private const TERMINAL_APPLICATION_STATUSES = [
-        'hired',
-        'rejected',
-        'withdrawn',
-    ];
-
     public function __construct(
         private readonly JobApplicationScheduledEventPayloadBuilder $payloadBuilder,
+        private readonly JobApplicationStatusWorkflow $statusWorkflow,
     ) {
     }
 
@@ -39,7 +35,7 @@ class ScheduleJobApplicationEvent
                 throw new AuthorizationException('The user does not own this job application.');
             }
 
-            if (in_array($application->status, self::TERMINAL_APPLICATION_STATUSES, true)) {
+            if ($this->statusWorkflow->isTerminal($application->status)) {
                 throw ValidationException::withMessages([
                     'job_application' => 'A terminal application cannot receive a new scheduled event.',
                 ]);
