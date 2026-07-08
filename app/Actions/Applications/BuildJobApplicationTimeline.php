@@ -44,6 +44,7 @@ class BuildJobApplicationTimeline
         $application->load([
             'statusHistory.changedBy',
             'trackingHistory.changedBy',
+            'interactions.recordedBy',
             'documentVersionHistory.changedBy',
             'documentAccessHistory.accessedBy',
         ]);
