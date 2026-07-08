@@ -67,11 +67,17 @@ class JobApplicationWorkspaceBuilder
                 'submission_ready' => $readiness['ready'],
                 'has_follow_up' => $followUp['follow_up_at'] !== null,
                 'has_planned_event' => $nextPlannedEvent !== null,
+                'has_event_replacements' => $application
+                    ->scheduledEventReplacements
+                    ->isNotEmpty(),
             ],
             'counts' => [
                 'interactions_total' => $application->interactions->count(),
                 'scheduled_events_total' => $application->scheduledEvents->count(),
                 'planned_events_total' => $plannedEventsTotal,
+                'event_replacements_total' => $application
+                    ->scheduledEventReplacements
+                    ->count(),
                 'timeline_events_total' => $timeline['summary']['available_total'],
                 'timeline_events_returned' => $timeline['summary']['returned_total'],
             ],
@@ -213,6 +219,12 @@ class JobApplicationWorkspaceBuilder
 
         return [
             'id' => $event->getKey(),
+            'replaces_scheduled_event_id' => $event
+                ->replacesRecord
+                ?->previous_scheduled_event_id,
+            'replaced_by_scheduled_event_id' => $event
+                ->replacementRecord
+                ?->replacement_scheduled_event_id,
             'client_reference' => $event->client_reference,
             'event_type' => $event->event_type,
             'title' => $event->title,
