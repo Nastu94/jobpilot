@@ -369,6 +369,7 @@ class BuildProfileApplicationLifecycleAnalyticsTest extends TestCase
             $application->statusHistory()->create([
                 'from_status' => $fromStatus,
                 'status' => $toStatus,
+                'changed_by' => $profile->user_id,
                 'changed_at' => $changedAt,
             ]);
         }
