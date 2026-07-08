@@ -45,6 +45,7 @@ class BuildJobApplicationTimeline
             'statusHistory.changedBy',
             'trackingHistory.changedBy',
             'interactions.recordedBy',
+            'scheduledEvents.statusHistory.changedBy',
             'documentVersionHistory.changedBy',
             'documentAccessHistory.accessedBy',
         ]);
