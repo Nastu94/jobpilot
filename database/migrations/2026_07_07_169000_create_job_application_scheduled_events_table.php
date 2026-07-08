@@ -19,7 +19,7 @@ return new class extends Migration
             $table->timestamp('starts_at');
             $table->timestamp('ends_at')->nullable();
             $table->string('location')->nullable();
-            $table->string('meeting_url')->nullable();
+            $table->string('meeting_url', 2048)->nullable();
             $table->string('contact_name')->nullable();
             $table->string('contact_email')->nullable();
             $table->string('status', 20)->default('planned');
