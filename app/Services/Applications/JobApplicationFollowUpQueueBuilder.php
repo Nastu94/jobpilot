@@ -9,12 +9,6 @@ use Illuminate\Support\Collection;
 
 class JobApplicationFollowUpQueueBuilder
 {
-    private const TERMINAL_STATUSES = [
-        'hired',
-        'rejected',
-        'withdrawn',
-    ];
-
     private const UNSCHEDULED_STATUS_PRIORITY = [
         'offer' => 0,
         'interview' => 1,
@@ -26,6 +20,7 @@ class JobApplicationFollowUpQueueBuilder
 
     public function __construct(
         private readonly JobApplicationFollowUpContextBuilder $contextBuilder,
+        private readonly JobApplicationStatusWorkflow $statusWorkflow,
     ) {
     }
 
@@ -37,7 +32,10 @@ class JobApplicationFollowUpQueueBuilder
     ): array {
         $applications = JobApplication::query()
             ->where('profile_id', $profile->getKey())
-            ->whereNotIn('status', self::TERMINAL_STATUSES)
+            ->whereNotIn(
+                'status',
+                $this->statusWorkflow->terminalStatuses(),
+            )
             ->with([
                 'trackingHistory',
                 'scheduledEvents' => fn ($query) => $query
