@@ -10,9 +10,7 @@ return new class extends Migration
     {
         Schema::create('job_application_document_version_histories', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('job_application_id')
-                ->constrained()
-                ->cascadeOnDelete();
+            $table->unsignedBigInteger('job_application_id');
             $table->unsignedBigInteger('changed_by')->nullable();
             $table->unsignedBigInteger('generated_document_id');
             $table->unsignedBigInteger('previous_generated_document_version_id')->nullable();
@@ -34,6 +32,10 @@ return new class extends Migration
                 'job_app_doc_sel_changed_idx'
             );
             $table->index('changed_by', 'job_app_doc_sel_actor_idx');
+            $table->foreign('job_application_id', 'job_app_doc_sel_app_fk')
+                ->references('id')
+                ->on('job_applications')
+                ->cascadeOnDelete();
             $table->foreign('changed_by', 'job_app_doc_sel_actor_fk')
                 ->references('id')
                 ->on('users')
