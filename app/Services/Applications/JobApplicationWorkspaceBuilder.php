@@ -6,6 +6,7 @@ use App\Models\GeneratedDocumentVersion;
 use App\Models\JobApplication;
 use App\Models\JobApplicationInteraction;
 use App\Models\JobApplicationScheduledEvent;
+use App\Models\JobApplicationSubmissionConfirmation;
 use Carbon\CarbonImmutable;
 
 class JobApplicationWorkspaceBuilder
@@ -52,12 +53,16 @@ class JobApplicationWorkspaceBuilder
             self::TERMINAL_STATUSES,
             true,
         );
+        $submissionConfirmation = $application->submissionConfirmation;
 
         return [
             'application' => $this->application($application),
             'posting' => $this->posting($application),
             'document' => $this->document($application),
             'submission_readiness' => $readiness,
+            'submission_confirmation' => $this->submissionConfirmation(
+                $submissionConfirmation,
+            ),
             'follow_up' => $followUp,
             'latest_interaction' => $this->interaction($latestInteraction),
             'next_planned_event' => $this->scheduledEvent($nextPlannedEvent),
@@ -65,6 +70,7 @@ class JobApplicationWorkspaceBuilder
                 'is_terminal' => $terminal,
                 'is_active' => ! $terminal,
                 'submission_ready' => $readiness['ready'],
+                'has_submission_confirmation' => $submissionConfirmation !== null,
                 'has_follow_up' => $followUp['follow_up_at'] !== null,
                 'has_planned_event' => $nextPlannedEvent !== null,
                 'has_event_replacements' => $application
@@ -72,6 +78,7 @@ class JobApplicationWorkspaceBuilder
                     ->isNotEmpty(),
             ],
             'counts' => [
+                'submission_confirmations_total' => $submissionConfirmation === null ? 0 : 1,
                 'interactions_total' => $application->interactions->count(),
                 'scheduled_events_total' => $application->scheduledEvents->count(),
                 'planned_events_total' => $plannedEventsTotal,
@@ -181,6 +188,35 @@ class JobApplicationWorkspaceBuilder
             'file_size' => $application->submitted_document_file_size,
             'checksum_sha256' => $application->submitted_document_checksum_sha256,
             'reviewed_at' => $application->submitted_document_reviewed_at?->toISOString(),
+        ];
+    }
+
+    private function submissionConfirmation(
+        ?JobApplicationSubmissionConfirmation $confirmation,
+    ): ?array {
+        if ($confirmation === null) {
+            return null;
+        }
+
+        return [
+            'id' => $confirmation->getKey(),
+            'client_reference' => $confirmation->client_reference,
+            'submitted_at' => $confirmation->submitted_at->toISOString(),
+            'application_channel' => $confirmation->application_channel,
+            'external_reference' => $confirmation->external_reference,
+            'destination_url' => $confirmation->destination_url,
+            'generated_document_version_id' => $confirmation->generated_document_version_id,
+            'source_resume_version_id' => $confirmation->source_resume_version_id,
+            'document_version_number' => $confirmation->document_version_number,
+            'document_filename' => $confirmation->document_filename,
+            'document_checksum_sha256' => $confirmation->document_checksum_sha256,
+            'notes' => $confirmation->notes,
+            'recorded_by' => $confirmation->recordedBy === null
+                ? null
+                : [
+                    'id' => $confirmation->recordedBy->getKey(),
+                    'name' => $confirmation->recordedBy->name,
+                ],
         ];
     }
 
