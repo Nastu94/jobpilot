@@ -141,7 +141,7 @@ class JobApplicationFollowUpQueueBuilder
             'reason_code' => $this->reasonCode($bucket),
             'days_from_reference' => $nextActionAt === null
                 ? null
-                : $startOfDay->diffInDays($nextActionAt->startOfDay(), false),
+                : (int) $startOfDay->diffInDays($nextActionAt->startOfDay(), false),
         ];
     }
 
