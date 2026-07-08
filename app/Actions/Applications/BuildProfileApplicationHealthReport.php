@@ -9,6 +9,7 @@ use App\Services\Applications\JobApplicationIntegrityRelations;
 use App\Services\Applications\JobApplicationStatusWorkflow;
 use App\Services\Applications\ProfileApplicationHealthReportBuilder;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 
@@ -66,9 +67,24 @@ class BuildProfileApplicationHealthReport
             ),
             array_values(
                 $options['application_statuses']
-                    ?? $this->statusWorkflow->statuses(),
+                    ?? $this->defaultApplicationStatuses($applications),
             ),
             (int) ($options['limit'] ?? 100),
         );
+    }
+
+    private function defaultApplicationStatuses(Collection $applications): array
+    {
+        $known = $this->statusWorkflow->statuses();
+        $unknown = $applications
+            ->pluck('status')
+            ->filter(fn (mixed $status): bool => is_string($status) && $status !== '')
+            ->unique()
+            ->reject(fn (string $status): bool => in_array($status, $known, true))
+            ->sort()
+            ->values()
+            ->all();
+
+        return array_merge($known, $unknown);
     }
 }
