@@ -85,7 +85,9 @@ class InspectJobApplicationSubmissionReadinessTest extends TestCase
     public function test_content_changed_after_approval_is_reported(): void
     {
         [$owner, $application, $version] = $this->scenario();
-        $version->forceFill(['content' => 'Changed after approval.'])->save();
+        $version->forceFill([
+            'content' => 'Changed after approval with a different length.',
+        ])->save();
 
         $report = app(InspectJobApplicationSubmissionReadiness::class)
             ->execute($application, $owner);
@@ -101,7 +103,7 @@ class InspectJobApplicationSubmissionReadinessTest extends TestCase
     {
         [$owner, $application, $version] = $this->scenario();
         $version->forceFill([
-            'storage_disk' => null,
+            'storage_disk' => '',
             'storage_path' => null,
             'filename' => null,
             'mime_type' => null,
