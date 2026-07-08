@@ -65,7 +65,6 @@ class JobApplicationManualSubmissionHandoffTest extends TestCase
     {
         [$owner, $application] = $this->scenario([
             'posting' => [
-                'source' => null,
                 'source_url' => null,
                 'external_id' => null,
             ],
