@@ -11,16 +11,11 @@ use Carbon\CarbonImmutable;
 
 class JobApplicationWorkspaceBuilder
 {
-    private const TERMINAL_STATUSES = [
-        'hired',
-        'rejected',
-        'withdrawn',
-    ];
-
     public function __construct(
         private readonly ApplicationSubmissionReadinessChecker $readinessChecker,
         private readonly JobApplicationFollowUpContextBuilder $followUpBuilder,
         private readonly JobApplicationTimelineBuilder $timelineBuilder,
+        private readonly JobApplicationStatusWorkflow $statusWorkflow,
     ) {
     }
 
@@ -48,10 +43,8 @@ class JobApplicationWorkspaceBuilder
         $plannedEventsTotal = $application->scheduledEvents
             ->where('status', 'planned')
             ->count();
-        $terminal = in_array(
+        $terminal = $this->statusWorkflow->isTerminal(
             $application->status,
-            self::TERMINAL_STATUSES,
-            true,
         );
         $submissionConfirmation = $application->submissionConfirmation;
 
