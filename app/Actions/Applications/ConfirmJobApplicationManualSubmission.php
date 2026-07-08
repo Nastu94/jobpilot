@@ -25,7 +25,6 @@ class ConfirmJobApplicationManualSubmission
         array $input,
     ): JobApplicationSubmissionConfirmation {
         return DB::transaction(function () use ($application, $actor, $input): JobApplicationSubmissionConfirmation {
-            $confirmationInput = $this->validatedConfirmation($input);
             $application = JobApplication::query()
                 ->with([
                     'profile',
@@ -39,6 +38,7 @@ class ConfirmJobApplicationManualSubmission
                 throw new AuthorizationException('The user does not own this job application.');
             }
 
+            $confirmationInput = $this->validatedConfirmation($input);
             $submittedAt = CarbonImmutable::parse(
                 $confirmationInput['submitted_at'],
             );
