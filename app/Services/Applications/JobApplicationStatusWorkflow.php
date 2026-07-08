@@ -27,6 +27,11 @@ class JobApplicationStatusWorkflow
         return array_keys(self::TRANSITIONS);
     }
 
+    public function terminalStatuses(): array
+    {
+        return self::TERMINAL_STATUSES;
+    }
+
     public function supports(string $status): bool
     {
         return array_key_exists($status, self::TRANSITIONS);
