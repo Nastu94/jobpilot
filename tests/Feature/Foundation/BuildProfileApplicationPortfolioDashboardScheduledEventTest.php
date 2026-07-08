@@ -67,9 +67,7 @@ class BuildProfileApplicationPortfolioDashboardScheduledEventTest extends TestCa
         $this->assertSame('follow_up_today', $item['primary_signal']);
         $this->assertSame(['follow_up_today'], $item['signals']);
         $this->assertSame('healthy', $item['integrity_status']);
-        $this->assertNull($item['follow_up_source'] === 'scheduled_event'
-            ? null
-            : $item['follow_up_source']);
+        $this->assertSame('scheduled_event', $item['follow_up_source']);
         $this->assertSame('scheduled_event_due_today', $item['follow_up_reason_code']);
         $this->assertSame($event->id, $item['scheduled_event']['id']);
         $this->assertSame('Recruiter call', $item['scheduled_event']['title']);
