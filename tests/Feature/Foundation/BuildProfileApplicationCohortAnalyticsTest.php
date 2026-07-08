@@ -179,10 +179,8 @@ class BuildProfileApplicationCohortAnalyticsTest extends TestCase
         $this->assertSame(2, $analytics['buckets'][0]['submitted_total']);
         $this->assertSame(1, $analytics['buckets'][1]['submitted_total']);
         $this->assertSame(3, $analytics['totals']['submitted_total']);
-        $this->assertContains(
-            $monday->id,
-            [$monday->id, $sunday->id],
-        );
+        $this->assertSame('applied', $monday->fresh()->status);
+        $this->assertSame('applied', $sunday->fresh()->status);
         $this->assertSame('applied', $nextMonday->fresh()->status);
     }
 
