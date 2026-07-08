@@ -9,6 +9,7 @@ use App\Models\JobApplicationInteraction;
 use App\Models\JobApplicationScheduledEvent;
 use App\Models\JobApplicationScheduledEventHistory;
 use App\Models\JobApplicationStatusHistory;
+use App\Models\JobApplicationSubmissionConfirmation;
 use App\Models\JobApplicationTrackingHistory;
 use App\Models\User;
 use Carbon\CarbonInterface;
@@ -16,6 +17,8 @@ use Carbon\CarbonInterface;
 class JobApplicationTimelineBuilder
 {
     public const TYPE_STATUS_CHANGED = 'status_changed';
+
+    public const TYPE_SUBMISSION_CONFIRMED = 'submission_confirmed';
 
     public const TYPE_TRACKING_UPDATED = 'tracking_updated';
 
@@ -29,6 +32,7 @@ class JobApplicationTimelineBuilder
 
     public const EVENT_TYPES = [
         self::TYPE_STATUS_CHANGED,
+        self::TYPE_SUBMISSION_CONFIRMED,
         self::TYPE_TRACKING_UPDATED,
         self::TYPE_INTERACTION_RECORDED,
         self::TYPE_SCHEDULED_EVENT_CHANGED,
@@ -38,6 +42,7 @@ class JobApplicationTimelineBuilder
 
     private const TYPE_PRIORITY = [
         self::TYPE_STATUS_CHANGED => 10,
+        self::TYPE_SUBMISSION_CONFIRMED => 15,
         self::TYPE_TRACKING_UPDATED => 20,
         self::TYPE_INTERACTION_RECORDED => 25,
         self::TYPE_SCHEDULED_EVENT_CHANGED => 27,
@@ -55,6 +60,12 @@ class JobApplicationTimelineBuilder
 
         foreach ($application->statusHistory as $history) {
             $events[] = $this->statusEvent($history);
+        }
+
+        if ($application->submissionConfirmation !== null) {
+            $events[] = $this->submissionConfirmationEvent(
+                $application->submissionConfirmation,
+            );
         }
 
         foreach ($application->trackingHistory as $history) {
@@ -148,6 +159,30 @@ class JobApplicationTimelineBuilder
                 'from_status' => $history->from_status,
                 'status' => $history->status,
                 'notes' => $history->notes,
+            ],
+        );
+    }
+
+    private function submissionConfirmationEvent(
+        JobApplicationSubmissionConfirmation $confirmation,
+    ): array {
+        return $this->event(
+            self::TYPE_SUBMISSION_CONFIRMED,
+            $confirmation->getKey(),
+            $confirmation->submitted_at,
+            $confirmation->recordedBy,
+            'application_submission_confirmed',
+            [
+                'client_reference' => $confirmation->client_reference,
+                'application_channel' => $confirmation->application_channel,
+                'external_reference' => $confirmation->external_reference,
+                'destination_url' => $confirmation->destination_url,
+                'generated_document_version_id' => $confirmation->generated_document_version_id,
+                'source_resume_version_id' => $confirmation->source_resume_version_id,
+                'document_version_number' => $confirmation->document_version_number,
+                'document_filename' => $confirmation->document_filename,
+                'document_checksum_sha256' => $confirmation->document_checksum_sha256,
+                'notes' => $confirmation->notes,
             ],
         );
     }
