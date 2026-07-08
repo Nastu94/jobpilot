@@ -248,12 +248,13 @@ class RescheduleJobApplicationEvent
         }
 
         $existing = JobApplicationScheduledEvent::query()
+            ->select('id')
             ->where('job_application_id', $application->getKey())
             ->where('client_reference', $clientReference)
             ->lockForUpdate()
-            ->exists();
+            ->first();
 
-        if ($existing) {
+        if ($existing !== null) {
             throw ValidationException::withMessages([
                 'replacement_event.client_reference' => 'The replacement event client reference is already in use for this application.',
             ]);
