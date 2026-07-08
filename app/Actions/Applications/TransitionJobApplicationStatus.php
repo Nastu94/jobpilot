@@ -109,8 +109,15 @@ class TransitionJobApplicationStatus
                 'status' => $targetStatus,
             ];
 
-            if ($targetStatus === 'applied' && $application->applied_at === null) {
-                $updates['applied_at'] = $changedAt;
+            if ($targetStatus === 'applied') {
+                if ($application->applied_at === null) {
+                    $updates['applied_at'] = $changedAt;
+                }
+
+                $updates = array_merge(
+                    $updates,
+                    $this->submissionSnapshot($application),
+                );
             }
 
             if (array_key_exists('application_channel', $transition)) {
@@ -192,6 +199,27 @@ class TransitionJobApplicationStatus
         throw ValidationException::withMessages([
             'submission_readiness' => array_column($readiness['blockers'], 'message'),
         ]);
+    }
+
+    private function submissionSnapshot(JobApplication $application): array
+    {
+        $version = $application->generatedDocumentVersion;
+
+        return [
+            'submitted_generated_document_version_id' => $version->getKey(),
+            'submitted_source_resume_version_id' => $version->source_resume_version_id,
+            'submitted_document_version_number' => $version->version_number,
+            'submitted_document_filename' => $version->filename,
+            'submitted_document_mime_type' => $version->mime_type,
+            'submitted_document_file_size' => $version->file_size,
+            'submitted_document_checksum_sha256' => $version->checksum_sha256,
+            'submitted_document_content_sha256' => $version->reviewed_content_sha256,
+            'submitted_document_storage_disk' => $version->storage_disk,
+            'submitted_document_storage_path' => $version->storage_path,
+            'submitted_document_generator_key' => $version->generator_key,
+            'submitted_document_generator_version' => $version->generator_version,
+            'submitted_document_reviewed_at' => $version->reviewed_at,
+        ];
     }
 
     private function applicationRelations(): array
