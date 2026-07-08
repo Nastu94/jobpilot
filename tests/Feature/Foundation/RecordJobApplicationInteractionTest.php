@@ -180,14 +180,18 @@ class RecordJobApplicationInteractionTest extends TestCase
 
     public function test_actor_deletion_is_preserved_as_null_and_application_deletion_cascades(): void
     {
-        [$owner, $application] = $this->scenario();
-        $interaction = app(RecordJobApplicationInteraction::class)->execute(
-            $application,
-            $owner,
-            $this->payload(),
-        );
+        [, $application] = $this->scenario();
+        $secondaryActor = User::factory()->create();
+        $interaction = JobApplicationInteraction::create([
+            'job_application_id' => $application->id,
+            'recorded_by' => $secondaryActor->id,
+            'interaction_type' => 'other',
+            'direction' => 'internal',
+            'subject' => 'Imported audit entry',
+            'occurred_at' => now()->subHour()->startOfSecond(),
+        ]);
 
-        $owner->delete();
+        $secondaryActor->delete();
         $preserved = JobApplicationInteraction::query()->findOrFail($interaction->id);
 
         $this->assertNull($preserved->recorded_by);
