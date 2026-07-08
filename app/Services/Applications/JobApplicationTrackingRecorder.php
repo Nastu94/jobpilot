@@ -6,6 +6,7 @@ use App\Models\JobApplication;
 use App\Models\JobApplicationTrackingHistory;
 use App\Models\User;
 use DateTimeInterface;
+use Illuminate\Validation\ValidationException;
 
 class JobApplicationTrackingRecorder
 {
@@ -35,6 +36,19 @@ class JobApplicationTrackingRecorder
 
         if ($this->comparable($before) === $this->comparable($after)) {
             return null;
+        }
+
+        $latestHistory = JobApplicationTrackingHistory::query()
+            ->where('job_application_id', $application->getKey())
+            ->orderByDesc('changed_at')
+            ->orderByDesc('id')
+            ->lockForUpdate()
+            ->first();
+
+        if ($latestHistory !== null && $changedAt < $latestHistory->changed_at) {
+            throw ValidationException::withMessages([
+                'changed_at' => 'The tracking change cannot precede the latest tracking history entry.',
+            ]);
         }
 
         return $application->trackingHistory()->create([
