@@ -32,7 +32,7 @@ class TransitionJobApplicationStatus
     ): JobApplication {
         return DB::transaction(function () use ($application, $actor, $input): JobApplication {
             $application = JobApplication::query()
-                ->with(['profile', 'generatedDocumentVersion'])
+                ->with(['profile', 'jobPosting', 'generatedDocumentVersion'])
                 ->lockForUpdate()
                 ->findOrFail($application->getKey());
 
@@ -95,17 +95,6 @@ class TransitionJobApplicationStatus
                 'status' => $targetStatus,
             ];
 
-            if ($targetStatus === 'applied') {
-                if ($application->applied_at === null) {
-                    $updates['applied_at'] = $changedAt;
-                }
-
-                $updates = array_merge(
-                    $updates,
-                    $this->submissionSnapshot($application),
-                );
-            }
-
             if (array_key_exists('application_channel', $transition)) {
                 $updates['application_channel'] = $this->nullableSquished(
                     $transition['application_channel'],
@@ -115,6 +104,21 @@ class TransitionJobApplicationStatus
             if (array_key_exists('external_reference', $transition)) {
                 $updates['external_reference'] = $this->nullableSquished(
                     $transition['external_reference'],
+                );
+            }
+
+            if ($targetStatus === 'applied') {
+                if ($application->applied_at === null) {
+                    $updates['applied_at'] = $changedAt;
+                }
+
+                $updates = array_merge(
+                    $updates,
+                    $this->submissionSnapshot(
+                        $application,
+                        $changedAt,
+                        $updates,
+                    ),
                 );
             }
 
@@ -197,9 +201,25 @@ class TransitionJobApplicationStatus
         ]);
     }
 
-    private function submissionSnapshot(JobApplication $application): array
-    {
+    private function submissionSnapshot(
+        JobApplication $application,
+        CarbonImmutable $capturedAt,
+        array $pendingUpdates,
+    ): array {
         $version = $application->generatedDocumentVersion;
+        $posting = $application->jobPosting;
+        $applicationChannel = array_key_exists(
+            'application_channel',
+            $pendingUpdates,
+        )
+            ? $pendingUpdates['application_channel']
+            : $application->application_channel;
+        $externalReference = array_key_exists(
+            'external_reference',
+            $pendingUpdates,
+        )
+            ? $pendingUpdates['external_reference']
+            : $application->external_reference;
 
         return [
             'submitted_generated_document_version_id' => $version->getKey(),
@@ -215,6 +235,18 @@ class TransitionJobApplicationStatus
             'submitted_document_generator_key' => $version->generator_key,
             'submitted_document_generator_version' => $version->generator_version,
             'submitted_document_reviewed_at' => $version->reviewed_at,
+            'submitted_context_captured_at' => $capturedAt,
+            'submitted_job_posting_id' => $application->job_posting_id,
+            'submitted_job_title' => $this->nullableSquished($application->job_title),
+            'submitted_company_name' => $this->nullableSquished($application->company_name),
+            'submitted_job_source' => $this->nullableSquished($posting?->source),
+            'submitted_job_location' => $this->nullableSquished($posting?->location),
+            'submitted_job_country_code' => $this->nullableSquished($posting?->country_code),
+            'submitted_job_remote_type' => $this->nullableSquished($posting?->remote_type),
+            'submitted_job_employment_type' => $this->nullableSquished($posting?->employment_type),
+            'submitted_job_seniority' => $this->nullableSquished($posting?->seniority),
+            'submitted_application_channel' => $this->nullableSquished($applicationChannel),
+            'submitted_external_reference' => $this->nullableSquished($externalReference),
         ];
     }
 
