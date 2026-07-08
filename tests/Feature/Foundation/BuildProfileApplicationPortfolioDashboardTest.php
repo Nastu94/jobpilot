@@ -165,13 +165,13 @@ class BuildProfileApplicationPortfolioDashboardTest extends TestCase
         );
         $warningItem = collect($dashboard['priority_queue'])
             ->firstWhere('application_id', $warning->id);
-        $this->assertSame([$event->id], $warningItem['integrity_issue_codes'] === []
-            ? []
-            : [$event->id]);
         $this->assertContains(
             'terminal_application_has_planned_events',
             $warningItem['integrity_issue_codes'],
         );
+        $this->assertNull($warningItem['follow_up_at']);
+        $this->assertNull($warningItem['scheduled_event']);
+        $this->assertSame('planned', $event->fresh()->status);
         $this->assertDatabaseCount('job_application_document_access_histories', 0);
     }
 
