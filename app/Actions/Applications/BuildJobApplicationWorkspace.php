@@ -42,6 +42,9 @@ class BuildJobApplicationWorkspace
                 'trackingHistory.changedBy',
                 'interactions.recordedBy',
                 'scheduledEvents.statusHistory.changedBy',
+                'scheduledEvents.replacementRecord',
+                'scheduledEvents.replacesRecord',
+                'scheduledEventReplacements.changedBy',
                 'documentVersionHistory.changedBy',
                 'documentAccessHistory.accessedBy',
             ])
