@@ -43,6 +43,7 @@ class BuildJobApplicationTimeline
 
         $application->load([
             'statusHistory.changedBy',
+            'submissionConfirmation.recordedBy',
             'trackingHistory.changedBy',
             'interactions.recordedBy',
             'scheduledEvents.statusHistory.changedBy',
