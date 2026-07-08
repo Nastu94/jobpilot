@@ -52,8 +52,6 @@ class UpdateJobApplicationTrackingDetails
             $changedAt = isset($tracking['changed_at'])
                 ? CarbonImmutable::parse($tracking['changed_at'])
                 : CarbonImmutable::now();
-
-            $this->ensureChronology($application, $changedAt);
             $updates = $this->updates($application, $tracking, $changedAt);
             $before = $this->trackingRecorder->snapshot($application);
 
@@ -63,6 +61,7 @@ class UpdateJobApplicationTrackingDetails
                 return $application->fresh($this->applicationRelations());
             }
 
+            $this->ensureChronology($application, $changedAt);
             $application->save();
             $this->trackingRecorder->record(
                 $application,
