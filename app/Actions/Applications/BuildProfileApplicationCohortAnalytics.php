@@ -65,9 +65,9 @@ class BuildProfileApplicationCohortAnalytics
             ? CarbonImmutable::parse($options['start_at'])
             : ($granularity === 'week'
                 ? $referenceAt
-                    ->subWeeks(11)
                     ->startOfWeek(CarbonInterface::MONDAY)
-                : $referenceAt->subMonths(11)->startOfMonth());
+                    ->subWeeks(11)
+                : $referenceAt->startOfMonth()->subMonths(11));
 
         if ($startAt->gt($endAt)) {
             throw ValidationException::withMessages([
