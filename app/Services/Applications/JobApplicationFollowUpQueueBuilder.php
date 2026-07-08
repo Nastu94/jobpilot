@@ -33,7 +33,13 @@ class JobApplicationFollowUpQueueBuilder
         $applications = JobApplication::query()
             ->where('profile_id', $profile->getKey())
             ->whereNotIn('status', self::TERMINAL_STATUSES)
-            ->with('trackingHistory')
+            ->with([
+                'trackingHistory',
+                'scheduledEvents' => fn ($query) => $query
+                    ->where('status', 'planned')
+                    ->orderBy('starts_at')
+                    ->orderBy('id'),
+            ])
             ->get();
 
         $startOfDay = $referenceAt->startOfDay();
@@ -49,15 +55,21 @@ class JobApplicationFollowUpQueueBuilder
         ];
 
         foreach ($applications as $application) {
+            $followUp = $this->followUpContext($application);
             $bucket = $this->bucketFor(
-                $application,
+                $followUp['follow_up_at'],
                 $startOfDay,
                 $endOfDay,
                 $upcomingEnd,
             );
 
             $classified[$bucket]->push(
-                $this->item($application, $bucket, $startOfDay),
+                $this->item(
+                    $application,
+                    $followUp,
+                    $bucket,
+                    $startOfDay,
+                ),
             );
         }
 
@@ -92,27 +104,57 @@ class JobApplicationFollowUpQueueBuilder
         ];
     }
 
+    private function followUpContext(JobApplication $application): array
+    {
+        $nextActionAt = $application->next_action_at?->toImmutable();
+        $scheduledEvent = $application->scheduledEvents->first();
+        $scheduledAt = $scheduledEvent?->starts_at?->toImmutable();
+
+        if ($nextActionAt === null && $scheduledAt === null) {
+            return [
+                'follow_up_at' => null,
+                'follow_up_source' => null,
+                'scheduled_event' => null,
+            ];
+        }
+
+        if (
+            $scheduledAt !== null
+            && ($nextActionAt === null || $scheduledAt->lte($nextActionAt))
+        ) {
+            return [
+                'follow_up_at' => $scheduledAt,
+                'follow_up_source' => 'scheduled_event',
+                'scheduled_event' => $scheduledEvent,
+            ];
+        }
+
+        return [
+            'follow_up_at' => $nextActionAt,
+            'follow_up_source' => 'next_action',
+            'scheduled_event' => $scheduledEvent,
+        ];
+    }
+
     private function bucketFor(
-        JobApplication $application,
+        ?CarbonImmutable $followUpAt,
         CarbonImmutable $startOfDay,
         CarbonImmutable $endOfDay,
         CarbonImmutable $upcomingEnd,
     ): string {
-        if ($application->next_action_at === null) {
+        if ($followUpAt === null) {
             return 'unscheduled';
         }
 
-        $nextActionAt = $application->next_action_at->toImmutable();
-
-        if ($nextActionAt->lt($startOfDay)) {
+        if ($followUpAt->lt($startOfDay)) {
             return 'overdue';
         }
 
-        if ($nextActionAt->lte($endOfDay)) {
+        if ($followUpAt->lte($endOfDay)) {
             return 'today';
         }
 
-        if ($nextActionAt->lte($upcomingEnd)) {
+        if ($followUpAt->lte($upcomingEnd)) {
             return 'upcoming';
         }
 
@@ -121,10 +163,13 @@ class JobApplicationFollowUpQueueBuilder
 
     private function item(
         JobApplication $application,
+        array $followUp,
         string $bucket,
         CarbonImmutable $startOfDay,
     ): array {
         $nextActionAt = $application->next_action_at?->toImmutable();
+        $followUpAt = $followUp['follow_up_at'];
+        $scheduledEvent = $followUp['scheduled_event'];
         $latestTrackingChange = $application->trackingHistory->last()?->changed_at;
 
         return [
@@ -136,17 +181,42 @@ class JobApplicationFollowUpQueueBuilder
             'external_reference' => $application->external_reference,
             'applied_at' => $application->applied_at?->toISOString(),
             'next_action_at' => $nextActionAt?->toISOString(),
+            'follow_up_at' => $followUpAt?->toISOString(),
+            'follow_up_source' => $followUp['follow_up_source'],
+            'scheduled_event' => $scheduledEvent === null
+                ? null
+                : [
+                    'id' => $scheduledEvent->getKey(),
+                    'event_type' => $scheduledEvent->event_type,
+                    'title' => $scheduledEvent->title,
+                    'starts_at' => $scheduledEvent->starts_at->toISOString(),
+                    'ends_at' => $scheduledEvent->ends_at?->toISOString(),
+                    'location' => $scheduledEvent->location,
+                ],
             'latest_tracking_change_at' => $latestTrackingChange?->toISOString(),
             'urgency' => $bucket,
-            'reason_code' => $this->reasonCode($bucket),
-            'days_from_reference' => $nextActionAt === null
+            'reason_code' => $this->reasonCode(
+                $bucket,
+                $followUp['follow_up_source'],
+            ),
+            'days_from_reference' => $followUpAt === null
                 ? null
-                : (int) $startOfDay->diffInDays($nextActionAt->startOfDay(), false),
+                : (int) $startOfDay->diffInDays($followUpAt->startOfDay(), false),
         ];
     }
 
-    private function reasonCode(string $bucket): string
+    private function reasonCode(string $bucket, ?string $source): string
     {
+        if ($source === 'scheduled_event') {
+            return match ($bucket) {
+                'overdue' => 'scheduled_event_overdue',
+                'today' => 'scheduled_event_due_today',
+                'upcoming' => 'scheduled_event_upcoming',
+                'later' => 'scheduled_event_scheduled_later',
+                'unscheduled' => 'active_application_without_follow_up',
+            };
+        }
+
         return match ($bucket) {
             'overdue' => 'next_action_overdue',
             'today' => 'next_action_due_today',
@@ -160,8 +230,8 @@ class JobApplicationFollowUpQueueBuilder
     {
         return $items->sort(function (array $left, array $right): int {
             $dateComparison = strcmp(
-                (string) $left['next_action_at'],
-                (string) $right['next_action_at'],
+                (string) $left['follow_up_at'],
+                (string) $right['follow_up_at'],
             );
 
             return $dateComparison !== 0
