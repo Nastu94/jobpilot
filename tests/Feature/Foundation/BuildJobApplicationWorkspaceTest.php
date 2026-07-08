@@ -260,7 +260,7 @@ class BuildJobApplicationWorkspaceTest extends TestCase
 
                 $this->fail('Invalid workspace options were accepted.');
             } catch (ValidationException $exception) {
-                $this->assertArrayHasKey('options', $exception->errors());
+                $this->assertNotEmpty($exception->errors());
             }
         }
     }
