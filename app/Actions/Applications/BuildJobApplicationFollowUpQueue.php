@@ -29,7 +29,7 @@ class BuildJobApplicationFollowUpQueue
 
         $options = Validator::make(['options' => $input], [
             'options' => [
-                'required',
+                'present',
                 'array:reference_at,upcoming_days,limit_per_bucket',
             ],
             'options.reference_at' => ['nullable', 'date'],
