@@ -210,6 +210,8 @@ class JobApplicationTimelineBuilder
             'application_scheduled_event_changed',
             [
                 'scheduled_event_id' => $scheduledEvent->getKey(),
+                'replaces_scheduled_event_id' => $scheduledEvent->replacesRecord?->previous_scheduled_event_id,
+                'replaced_by_scheduled_event_id' => $scheduledEvent->replacementRecord?->replacement_scheduled_event_id,
                 'client_reference' => $scheduledEvent->client_reference,
                 'event_type' => $scheduledEvent->event_type,
                 'title' => $scheduledEvent->title,
