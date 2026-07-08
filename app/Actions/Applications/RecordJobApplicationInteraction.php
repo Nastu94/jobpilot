@@ -41,14 +41,14 @@ class RecordJobApplicationInteraction
 
             $attributes = [
                 'recorded_by' => $actor->getKey(),
-                'client_reference' => $this->nullableSquished($interaction['client_reference'] ?? null),
+                'client_reference' => $interaction['client_reference'] ?? null,
                 'interaction_type' => $interaction['interaction_type'],
                 'direction' => $interaction['direction'],
-                'subject' => $this->nullableSquished($interaction['subject'] ?? null),
-                'contact_name' => $this->nullableSquished($interaction['contact_name'] ?? null),
-                'contact_email' => $this->nullableEmail($interaction['contact_email'] ?? null),
+                'subject' => $interaction['subject'] ?? null,
+                'contact_name' => $interaction['contact_name'] ?? null,
+                'contact_email' => $interaction['contact_email'] ?? null,
                 'occurred_at' => $occurredAt,
-                'notes' => $this->nullableTrimmed($interaction['notes'] ?? null),
+                'notes' => $interaction['notes'] ?? null,
             ];
 
             if ($attributes['subject'] === null && $attributes['notes'] === null) {
@@ -83,6 +83,8 @@ class RecordJobApplicationInteraction
 
     private function validatedInteraction(array $input): array
     {
+        $input = $this->normalizeInput($input);
+
         return Validator::make(['interaction' => $input], [
             'interaction' => [
                 'required',
@@ -105,6 +107,29 @@ class RecordJobApplicationInteraction
             'interaction.occurred_at' => ['required', 'date'],
             'interaction.notes' => ['nullable', 'string', 'max:5000'],
         ])->validate()['interaction'];
+    }
+
+    private function normalizeInput(array $input): array
+    {
+        foreach (['client_reference', 'interaction_type', 'direction', 'subject', 'contact_name'] as $field) {
+            if (array_key_exists($field, $input) && is_string($input[$field])) {
+                $input[$field] = $this->nullableSquished($input[$field]);
+            }
+        }
+
+        if (array_key_exists('contact_email', $input) && is_string($input['contact_email'])) {
+            $input['contact_email'] = $this->nullableEmail($input['contact_email']);
+        }
+
+        if (array_key_exists('occurred_at', $input) && is_string($input['occurred_at'])) {
+            $input['occurred_at'] = trim($input['occurred_at']);
+        }
+
+        if (array_key_exists('notes', $input) && is_string($input['notes'])) {
+            $input['notes'] = $this->nullableTrimmed($input['notes']);
+        }
+
+        return $input;
     }
 
     private function sameInteraction(
