@@ -82,6 +82,13 @@ class JobApplication extends Model
             ->orderBy('id');
     }
 
+    public function scheduledEvents(): HasMany
+    {
+        return $this->hasMany(JobApplicationScheduledEvent::class)
+            ->orderBy('starts_at')
+            ->orderBy('id');
+    }
+
     public function generatedDocuments(): HasMany
     {
         return $this->hasMany(GeneratedDocument::class)->orderByDesc('id');
