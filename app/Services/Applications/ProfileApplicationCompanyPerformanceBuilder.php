@@ -103,6 +103,7 @@ class ProfileApplicationCompanyPerformanceBuilder
             'methodology' => [
                 'interpretation' => 'descriptive_not_causal',
                 'grouping' => 'normalized_application_company_name_snapshot',
+                'value_source' => 'submission_snapshot_with_legacy_live_fallback',
                 'rate_denominator' => 'eligible_submitted_applications_in_company',
                 'insufficient_samples_are_returned_not_hidden' => true,
             ],
@@ -132,11 +133,15 @@ class ProfileApplicationCompanyPerformanceBuilder
 
     private function observedName(JobApplication $application): ?string
     {
-        if (! is_string($application->company_name)) {
+        $value = $application->submitted_context_captured_at !== null
+            ? $application->submitted_company_name
+            : $application->company_name;
+
+        if (! is_string($value)) {
             return null;
         }
 
-        $name = Str::squish($application->company_name);
+        $name = Str::squish($value);
 
         return $name === '' ? null : $name;
     }
