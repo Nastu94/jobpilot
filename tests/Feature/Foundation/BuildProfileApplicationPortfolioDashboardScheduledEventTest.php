@@ -44,7 +44,7 @@ class BuildProfileApplicationPortfolioDashboardScheduledEventTest extends TestCa
             $owner,
             [
                 'client_reference' => 'call-today',
-                'event_type' => 'call',
+                'event_type' => 'recruiter_call',
                 'title' => 'Recruiter call',
                 'starts_at' => '2026-07-08 15:00:00',
                 'ends_at' => '2026-07-08 15:30:00',
