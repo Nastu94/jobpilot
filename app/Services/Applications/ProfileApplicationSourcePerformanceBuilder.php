@@ -96,6 +96,7 @@ class ProfileApplicationSourcePerformanceBuilder
             'methodology' => [
                 'interpretation' => 'descriptive_not_causal',
                 'rate_denominator' => 'eligible_submitted_applications_in_group',
+                'value_source' => 'submission_snapshot_with_legacy_live_fallback',
                 'group_key_normalization' => 'trim_squish_lowercase_unknown_for_blank',
             ],
             'population' => [
@@ -114,9 +115,7 @@ class ProfileApplicationSourcePerformanceBuilder
         JobApplication $application,
         string $dimension,
     ): string {
-        $value = $dimension === 'job_source'
-            ? $application->jobPosting?->source
-            : $application->application_channel;
+        $value = $this->dimensionValue($application, $dimension);
 
         if (! is_string($value)) {
             return 'unknown';
@@ -125,6 +124,21 @@ class ProfileApplicationSourcePerformanceBuilder
         $value = Str::lower(Str::squish($value));
 
         return $value === '' ? 'unknown' : $value;
+    }
+
+    private function dimensionValue(
+        JobApplication $application,
+        string $dimension,
+    ): ?string {
+        if ($application->submitted_context_captured_at !== null) {
+            return $dimension === 'job_source'
+                ? $application->submitted_job_source
+                : $application->submitted_application_channel;
+        }
+
+        return $dimension === 'job_source'
+            ? $application->jobPosting?->source
+            : $application->application_channel;
     }
 
     private function exclusions(array $exclusions): array
