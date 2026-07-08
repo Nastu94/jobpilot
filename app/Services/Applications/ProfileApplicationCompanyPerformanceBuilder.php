@@ -143,13 +143,7 @@ class ProfileApplicationCompanyPerformanceBuilder
 
     private function observedNames(array $names): array
     {
-        $unique = [];
-
-        foreach ($names as $name) {
-            $unique[Str::lower($name)] ??= $name;
-        }
-
-        $names = array_values($unique);
+        $names = array_values(array_unique($names));
         usort($names, function (string $left, string $right): int {
             $comparison = strcasecmp($left, $right);
 
