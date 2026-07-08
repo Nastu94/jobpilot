@@ -6,6 +6,8 @@ use App\Models\JobApplication;
 use App\Models\JobApplicationDocumentAccessHistory;
 use App\Models\JobApplicationDocumentVersionHistory;
 use App\Models\JobApplicationInteraction;
+use App\Models\JobApplicationScheduledEvent;
+use App\Models\JobApplicationScheduledEventHistory;
 use App\Models\JobApplicationStatusHistory;
 use App\Models\JobApplicationTrackingHistory;
 use App\Models\User;
@@ -19,6 +21,8 @@ class JobApplicationTimelineBuilder
 
     public const TYPE_INTERACTION_RECORDED = 'interaction_recorded';
 
+    public const TYPE_SCHEDULED_EVENT_CHANGED = 'scheduled_event_changed';
+
     public const TYPE_DOCUMENT_VERSION_SELECTED = 'document_version_selected';
 
     public const TYPE_DOCUMENT_ACCESSED = 'document_accessed';
@@ -27,6 +31,7 @@ class JobApplicationTimelineBuilder
         self::TYPE_STATUS_CHANGED,
         self::TYPE_TRACKING_UPDATED,
         self::TYPE_INTERACTION_RECORDED,
+        self::TYPE_SCHEDULED_EVENT_CHANGED,
         self::TYPE_DOCUMENT_VERSION_SELECTED,
         self::TYPE_DOCUMENT_ACCESSED,
     ];
@@ -35,6 +40,7 @@ class JobApplicationTimelineBuilder
         self::TYPE_STATUS_CHANGED => 10,
         self::TYPE_TRACKING_UPDATED => 20,
         self::TYPE_INTERACTION_RECORDED => 25,
+        self::TYPE_SCHEDULED_EVENT_CHANGED => 27,
         self::TYPE_DOCUMENT_VERSION_SELECTED => 30,
         self::TYPE_DOCUMENT_ACCESSED => 40,
     ];
@@ -57,6 +63,15 @@ class JobApplicationTimelineBuilder
 
         foreach ($application->interactions as $interaction) {
             $events[] = $this->interactionEvent($interaction);
+        }
+
+        foreach ($application->scheduledEvents as $scheduledEvent) {
+            foreach ($scheduledEvent->statusHistory as $history) {
+                $events[] = $this->scheduledEventChange(
+                    $scheduledEvent,
+                    $history,
+                );
+            }
         }
 
         foreach ($application->documentVersionHistory as $history) {
@@ -179,6 +194,35 @@ class JobApplicationTimelineBuilder
                 'contact_name' => $interaction->contact_name,
                 'contact_email' => $interaction->contact_email,
                 'notes' => $interaction->notes,
+            ],
+        );
+    }
+
+    private function scheduledEventChange(
+        JobApplicationScheduledEvent $scheduledEvent,
+        JobApplicationScheduledEventHistory $history,
+    ): array {
+        return $this->event(
+            self::TYPE_SCHEDULED_EVENT_CHANGED,
+            $history->getKey(),
+            $history->changed_at,
+            $history->changedBy,
+            'application_scheduled_event_changed',
+            [
+                'scheduled_event_id' => $scheduledEvent->getKey(),
+                'client_reference' => $scheduledEvent->client_reference,
+                'event_type' => $scheduledEvent->event_type,
+                'title' => $scheduledEvent->title,
+                'starts_at' => $scheduledEvent->starts_at->toISOString(),
+                'ends_at' => $scheduledEvent->ends_at?->toISOString(),
+                'location' => $scheduledEvent->location,
+                'meeting_url' => $scheduledEvent->meeting_url,
+                'contact_name' => $scheduledEvent->contact_name,
+                'contact_email' => $scheduledEvent->contact_email,
+                'from_status' => $history->from_status,
+                'status' => $history->status,
+                'event_notes' => $scheduledEvent->notes,
+                'change_notes' => $history->notes,
             ],
         );
     }
