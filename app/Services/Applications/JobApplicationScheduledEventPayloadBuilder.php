@@ -12,33 +12,21 @@ use Illuminate\Validation\ValidationException;
 
 class JobApplicationScheduledEventPayloadBuilder
 {
-    public function build(array $input, User $actor): array
-    {
+    public function build(
+        array $input,
+        User $actor,
+        bool $requireFuture = true,
+    ): array {
         $event = $this->validatedEvent($input);
-        $startsAt = CarbonImmutable::parse($event['starts_at']);
-        $endsAt = isset($event['ends_at']) && $event['ends_at'] !== null
-            ? CarbonImmutable::parse($event['ends_at'])
-            : null;
-
-        if (! $startsAt->isFuture()) {
-            throw ValidationException::withMessages([
-                'starts_at' => 'A scheduled event must start in the future.',
-            ]);
-        }
-
-        if ($endsAt !== null && ! $endsAt->gt($startsAt)) {
-            throw ValidationException::withMessages([
-                'ends_at' => 'The event end must be after its start.',
-            ]);
-        }
-
-        return [
+        $attributes = [
             'created_by' => $actor->getKey(),
             'client_reference' => $event['client_reference'] ?? null,
             'event_type' => $event['event_type'],
             'title' => $event['title'],
-            'starts_at' => $startsAt,
-            'ends_at' => $endsAt,
+            'starts_at' => CarbonImmutable::parse($event['starts_at']),
+            'ends_at' => isset($event['ends_at']) && $event['ends_at'] !== null
+                ? CarbonImmutable::parse($event['ends_at'])
+                : null,
             'location' => $event['location'] ?? null,
             'meeting_url' => $event['meeting_url'] ?? null,
             'contact_name' => $event['contact_name'] ?? null,
@@ -46,6 +34,23 @@ class JobApplicationScheduledEventPayloadBuilder
             'notes' => $event['notes'] ?? null,
             'status' => 'planned',
         ];
+
+        $this->ensureChronology($attributes);
+
+        if ($requireFuture) {
+            $this->ensureFuture($attributes);
+        }
+
+        return $attributes;
+    }
+
+    public function ensureFuture(array $attributes): void
+    {
+        if (! $attributes['starts_at']->isFuture()) {
+            throw ValidationException::withMessages([
+                'starts_at' => 'A scheduled event must start in the future.',
+            ]);
+        }
     }
 
     public function same(
@@ -67,6 +72,18 @@ class JobApplicationScheduledEventPayloadBuilder
             && $existing->contact_name === $attributes['contact_name']
             && $existing->contact_email === $attributes['contact_email']
             && $existing->notes === $attributes['notes'];
+    }
+
+    private function ensureChronology(array $attributes): void
+    {
+        if (
+            $attributes['ends_at'] !== null
+            && ! $attributes['ends_at']->gt($attributes['starts_at'])
+        ) {
+            throw ValidationException::withMessages([
+                'ends_at' => 'The event end must be after its start.',
+            ]);
+        }
     }
 
     private function validatedEvent(array $input): array
