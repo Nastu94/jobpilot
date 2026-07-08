@@ -89,7 +89,7 @@ class SelectJobApplicationDocumentVersionTest extends TestCase
 
     public function test_only_draft_application_can_change_selected_version(): void
     {
-        [$owner, $application, , $newVersion] = $this->scenario();
+        [$owner, $application, $previousVersion, $newVersion] = $this->scenario();
         $application->forceFill(['status' => 'applied'])->save();
 
         try {
@@ -102,14 +102,14 @@ class SelectJobApplicationDocumentVersionTest extends TestCase
             $this->fail('A non-draft application changed its document version.');
         } catch (ValidationException $exception) {
             $this->assertArrayHasKey('job_application', $exception->errors());
-            $this->assertNotSame($newVersion->id, $application->fresh()->generated_document_version_id);
+            $this->assertSame($previousVersion->id, $application->fresh()->generated_document_version_id);
             $this->assertDatabaseCount('job_application_document_version_histories', 0);
         }
     }
 
     public function test_version_from_another_document_is_rejected(): void
     {
-        [$owner, $application, , , $document, $profile, $posting, , $sourceVersion] = $this->scenario();
+        [$owner, $application, $previousVersion, , , $profile, $posting, , $sourceVersion] = $this->scenario();
         $otherDocument = GeneratedDocument::create([
             'profile_id' => $profile->id,
             'job_posting_id' => $posting->id,
@@ -129,14 +129,14 @@ class SelectJobApplicationDocumentVersionTest extends TestCase
             $this->fail('A version from another document was selected.');
         } catch (ValidationException $exception) {
             $this->assertArrayHasKey('generated_document_version', $exception->errors());
-            $this->assertSame($document->versions()->first()->id, $application->fresh()->generated_document_version_id);
+            $this->assertSame($previousVersion->id, $application->fresh()->generated_document_version_id);
             $this->assertDatabaseCount('job_application_document_version_histories', 0);
         }
     }
 
     public function test_unapproved_or_unverified_version_is_rejected(): void
     {
-        [$owner, $application, , $newVersion] = $this->scenario();
+        [$owner, $application, $previousVersion, $newVersion] = $this->scenario();
         $newVersion->forceFill([
             'review_status' => 'pending',
             'contains_unverified_claims' => true,
@@ -154,14 +154,14 @@ class SelectJobApplicationDocumentVersionTest extends TestCase
             $messages = $exception->errors()['generated_document_version'] ?? [];
             $this->assertContains('The selected version is not approved.', $messages);
             $this->assertContains('The selected version contains unverified claims.', $messages);
-            $this->assertNotSame($newVersion->id, $application->fresh()->generated_document_version_id);
+            $this->assertSame($previousVersion->id, $application->fresh()->generated_document_version_id);
             $this->assertDatabaseCount('job_application_document_version_histories', 0);
         }
     }
 
     public function test_missing_or_tampered_private_export_is_rejected(): void
     {
-        [$owner, $application, , $newVersion, , , , $newPath] = $this->scenario();
+        [$owner, $application, $previousVersion, $newVersion, , , , $newPath] = $this->scenario();
         Storage::disk('local')->put($newPath, 'tampered file');
 
         try {
@@ -175,7 +175,7 @@ class SelectJobApplicationDocumentVersionTest extends TestCase
         } catch (ValidationException $exception) {
             $messages = $exception->errors()['generated_document_version'] ?? [];
             $this->assertContains('The exported file no longer matches the approved content.', $messages);
-            $this->assertNotSame($newVersion->id, $application->fresh()->generated_document_version_id);
+            $this->assertSame($previousVersion->id, $application->fresh()->generated_document_version_id);
             $this->assertDatabaseCount('job_application_document_version_histories', 0);
         }
     }
@@ -223,7 +223,7 @@ class SelectJobApplicationDocumentVersionTest extends TestCase
 
     public function test_future_selection_is_rejected(): void
     {
-        [$owner, $application, , $newVersion] = $this->scenario();
+        [$owner, $application, $previousVersion, $newVersion] = $this->scenario();
 
         try {
             app(SelectJobApplicationDocumentVersion::class)->execute(
@@ -236,7 +236,7 @@ class SelectJobApplicationDocumentVersionTest extends TestCase
             $this->fail('A future document selection was accepted.');
         } catch (ValidationException $exception) {
             $this->assertArrayHasKey('changed_at', $exception->errors());
-            $this->assertNotSame($newVersion->id, $application->fresh()->generated_document_version_id);
+            $this->assertSame($previousVersion->id, $application->fresh()->generated_document_version_id);
             $this->assertDatabaseCount('job_application_document_version_histories', 0);
         }
     }
