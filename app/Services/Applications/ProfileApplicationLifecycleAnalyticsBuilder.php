@@ -380,14 +380,19 @@ class ProfileApplicationLifecycleAnalyticsBuilder
             $open = [];
 
             foreach ($eligible as $timeline) {
-                array_push(
-                    $completed,
-                    ...($timeline['completed_durations'][$status] ?? []),
-                );
-                array_push(
-                    $open,
-                    ...($timeline['open_durations'][$status] ?? []),
-                );
+                foreach (
+                    $timeline['completed_durations'][$status] ?? []
+                    as $duration
+                ) {
+                    $completed[] = $duration;
+                }
+
+                foreach (
+                    $timeline['open_durations'][$status] ?? []
+                    as $duration
+                ) {
+                    $open[] = $duration;
+                }
             }
 
             $result[] = [
